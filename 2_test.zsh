@@ -1,37 +1,55 @@
 #!/bin/zsh
 
-# Optional: define LOG_PATH to capture logs
+# Optional: Define LOG_PATH to capture logs
+# Optional: Define LOG_LEVEL_STDOUT to  
 LOG_PATH="./my.log"
-. ./includes/zlog.sh
+source ./includes/zlog.sh
+
+log_info "Starting log in with LOG_LEVEL_STDOUT and LOG_LEVEL_LOG set to INFO"
+
+# This should not output anything alternatively four warnings. 
+SCRIPTENTRY
+trace_in
+trace_out
+SCRIPTEXIT
 
 # Set log level thresholds for testing
 LOG_LEVEL_STDOUT="DEBUG"
 LOG_LEVEL_LOG="DEBUG"
 
-echo "Starting slog zsh test..."
+# Script_entry (run as early as possible after defining
+SCRIPTENTRY
 
-# Test info log
-log_info "This is an INFO message."
+function dig_pirate_gold() {
+  trace_in   # We add "trace_in" in top of every function
 
-# Test success log
-log_success "This is a SUCCESS message."
+  log_info    "Digging for pirate gold..."
+  log_debug   "Searching on island: Hisingen"
+  
+  sleep 2
 
-# Test warning log
-log_warning "This is a WARNING message."
+  log_warning "This is taking a longer time than expected..."
+  log_success "We successfully got some pirate gold!"
 
-# Test error log
-log_error "This is an ERROR message."
+  trace_out  # We add "trace_out" in end of every function
+}
 
-# Test debug log
-log_debug "This is a DEBUG message."
+function get_hostname() {
+  trace_in   # We add "trace_in" in top of every function
 
-# Test trace entry and exit logs
-trace_begin "Entering function test_func"
-trace_end "Exiting function test_func"
+  log_info    "Getting hosting..."
+  log_info    "Hostname is: $(hostname)"
 
-# Test SCRIPTENTRY and SCRIPTEXIT (zsh specific)
-SCRIPTENTRY "Script entry point"
-SCRIPTEXIT "Script exit point"
+  trace_out   # We add "trace_out" in end of every function
+}
+
+#############################################################
+# Main script
+#############################################################
+log_info      "Starting program"
+dig_pirate_gold
+get_hostname
+log_error      "I'm done but I'm going to show an error instead"
 
 # Test log level filtering by changing levels
 echo "Changing LOG_LEVEL_STDOUT to WARNING"
@@ -48,5 +66,6 @@ if [ -f "$LOG_PATH" ]; then
   cat "$LOG_PATH"
 fi
 
-echo "slog zsh test complete."
+# Script exit (run as late as possible in the script)
+SCRIPTEXIT
 
