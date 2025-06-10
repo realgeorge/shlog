@@ -4,7 +4,7 @@
 # Optional: Define LOG_LEVEL_STDOUT to  
 # LOG_PATH="./my.log"
 LOG_LEVEL_MODE="DEBUG"
-source ./includes/zlog.sh
+source ./includes/zlog.sh $@
 
 for style in "standard" "enhanced" "classic"; do
 	LOG_FORMAT_PRESET=$style
