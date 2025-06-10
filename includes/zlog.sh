@@ -37,6 +37,8 @@ LOG_FORMAT_PRESET="enhanced"
 # TODO: Add parse options:
 
 
+
+
 # Determines if we print color or not
 if ! tty -s; then
 	readonly INTERACTIVE_MODE="off"
@@ -77,31 +79,32 @@ log() {
 	# local log_level="$2"
 	# local log_text_color="$3"
 
-	local log_level="$1"
+	local log_level=$(echo "$1" | tr '[:lower:]' '[:upper:]')
 	local log_text="$2"
 	local log_text_color="$3"
 
 	# Levels for comparing against LOG_LEVEL_STDOUT and LOG_LEVEL_LOG
 	# Define log level integers
-	local LOG_LEVEL_DEBUG=0
 	local LOG_LEVEL_TRACE=0
+	local LOG_LEVEL_DEBUG=0
 	local LOG_LEVEL_INFO=1
 	local LOG_LEVEL_SUCCESS=2
 	local LOG_LEVEL_WARNING=3
 	local LOG_LEVEL_ERROR=4
 	
 	# Validate levels since they'll be eval-ed
+	
 	case $log_level in
 		DEBUG|INFO|SUCCESS|WARNING|ERROR|TRACE) ;;
-		*) foo="$1 $log_text"; log_level=""		;; 
+		*) foo="$1 $log_text"; log_level=""			;; 
 	esac
 	case $LOG_LEVEL_STDOUT in
 		DEBUG|INFO|SUCCESS|WARNING|ERROR|TRACE) ;;
-		*) LOG_LEVEL_STDOUT=INFO				;;
+		*) LOG_LEVEL_STDOUT=INFO								;;
 	esac
 	case $LOG_LEVEL_LOG in
 		DEBUG|INFO|SUCCESS|WARNING|ERROR|TRACE) ;;
-		*) LOG_LEVEL_LOG=INFO					;;
+		*) LOG_LEVEL_LOG=INFO										;;
 	esac
 
 	# Default level to info
@@ -109,9 +112,8 @@ log() {
 	[ -z ${log_color} ] && log_color="LOG_INFO_COLOR"
 	
 	# Normalize the format of arguments passed to `log`
-    # Ensures output is clean by avoiding unintended leading spaces 
+  # Ensures output is clean by avoiding unintended leading spaces 
 	[ -z ${foo} ] || log_text=$(printf "%s" "$foo") 
-
 
 	# Check LOG_LEVEL_STDOUT to see if this level of entry goes to STDOUT
 	# XXX This is the horror that happens when your language doesn't have a hash data struct
@@ -121,16 +123,16 @@ log() {
 
 	case $LOG_FORMAT_PRESET in
 		# symmetric) log_prefix=$(printf "[%s]%*s" "$log_level" $((9 - ${#log_level} - 2)) "") ;;
-		enhanced) log_prefix=$( [ $log_level = "TRACE" ] && echo "[TRACE]" || printf "[%s]%*s" "$log_level" $((9 - ${#log_level} - 2)) "") ;; # Width = 9 - length of log_level - 2 (for [ and ] )
+		enhanced) log_prefix=$( [ $log_level = "TRACE" ] && echo "[TRACE] >" || printf "[%s]%*s" "$log_level" $((9 - ${#log_level} - 2)) "" ) ;; # Width = 9 - length of log_level - 2 (for [ and ] )
 		standard) log_prefix="[${log_level}]" ;;
 		classic)  log_prefix="${log_level}:"  ;;
-		*)         echo "Unknown style: $LOG_FORMAT_PRESET (use: symmetric|simple|classic)" ;;
+		*) echo "Unknown style: $LOG_FORMAT_PRESET (use: symmetric|simple|classic)" ;;
 	esac
 
 	#echo "$log_level_stdout $log_level_int"; return 1
 	if [ $log_level_stdout -le $log_level_int ]; then
 		# STDOUT
-		printf "${log_label_color}[%s] - %s ${log_text_color}%s${LOG_DEFAULT_COLOR}\n" "$(date +"%Y-%m-%d %H:%M:%S")" "$log_prefix" "$log_text"
+		printf "${log_label_color}[%s] %s ${log_text_color}%s${LOG_DEFAULT_COLOR}\n" "$(date +"%Y-%m-%d %H:%M:%S")" "$log_prefix" "$log_text"
 	fi
 	eval log_level_log="\$LOG_LEVEL_${LOG_LEVEL_LOG}"
 
@@ -138,7 +140,7 @@ log() {
 	if [ $log_level_log -le $log_level_int ]; then
 		# LOG_PATH minus fancypants colors
 		if [ ! -z $LOG_PATH ]; then
-			printf "[%s] - %s %s\n" "$(date +"%Y-%m-%d %H:%M:%S")" "$log_prefix" "${log_text}" >> $LOG_PATH;
+			printf "[%s] %s %s\n" "$(date +"%Y-%m-%d %H:%M:%S")" "$log_prefix" "${log_text}" >> $LOG_PATH;
 		fi
 	fi
 	return 0;
@@ -156,35 +158,35 @@ case "$SCRIPT_EXTENSION" in
 	zsh)
 		# Enable zsh-specific features
 		log_info() {
-			local func_name="${FUNCNAME[1]}"
+			local func_name="${funcstack[2]}"
 			local msg=$1
 			# log "$msg" "INFO" "$LOG_INFO_COLOR"
 			log "INFO" "$msg" "$LOG_INFO_COLOR"
 		}
 
 		log_success() {
-			local func_name="${FUNCNAME[1]}"
+			local func_name="${funcstack[2]}"
 			local msg=$1
 			# log "$msg" "SUCCESS" "$LOG_SUCCESS_COLOR"
 			log "SUCCESS" "$msg" "$LOG_SUCCESS_COLOR"
 		}
 
 		log_error() {
-			local func_name="${FUNCNAME[1]}"
+			local func_name="${funcstack[2]}"
 			local msg=$1
 			# log "$msg" "ERROR" "$LOG_ERROR_COLOR"
 			log "ERROR" "$msg" "$LOG_ERROR_COLOR"
 		}
 
 		log_warning() {
-			local func_name="${FUNCNAME[1]}"
+			local func_name="${funcstack[2]}"
 			local msg=$1
 			# log "$msg" "WARNING" "$LOG_WARNING_COLOR"
 			log "WARNING" "$msg" "$LOG_WARNING_COLOR"
 		}
 
 		log_debug() {
-			local func_name="${FUNCNAME[1]}"
+			local func_name="${funcstack[2]}"
 			local msg=$1
 			# log "$msg" "DEBUG" "$LOG_DEBUG_COLOR"
 			log "DEBUG" "$msg" "$LOG_DEBUG_COLOR"
@@ -194,29 +196,28 @@ case "$SCRIPT_EXTENSION" in
 			local script_name=${funcstack[2]:-${SCRIPT_NAME}}
 			local msg=${1:+($1)}
 			# log "> $script_name:$LINENO "$msg"" "TRACE" "$LOG_TRACE_COLOR"
-			log "TRACE" "> $script_name:$LINENO "$msg"" "$LOG_TRACE_COLOR"
+			log "TRACE" "$script_name:$LINENO "$msg"" "$LOG_TRACE_COLOR"
 		} 
 
 		SCRIPTEXIT() {
 			local script_name=${funcstack[2]:-${SCRIPT_NAME}}
 			local msg=${1:+($1)}
 			# log "< $script_name:$LINENO "$msg"" "TRACE" "$LOG_TRACE_COLOR"				
-			log "TRACE" "< $script_name:$LINENO "$msg"" "$LOG_TRACE_COLOR"				
+			log "TRACE" "$script_name:$LINENO "$msg"" "$LOG_TRACE_COLOR"				
 		}
 
 		trace_in() {
-			echo $funcfiletrace
 			local func_name=${funcstack[2]:-${funcfiletrace}}
 			local msg=${1:+($1)}
 			# log "> $func_name:$LINENO "$msg"" "TRACE" "$LOG_TRACE_COLOR"				
-			log "TRACE""> $func_name:$LINENO "$msg"" "$LOG_TRACE_COLOR"				
+			log "TRACE" "$func_name:$LINENO $msg" "$LOG_TRACE_COLOR"				
 		}
 
 		trace_out() {
 			local func_name=${funcstack[2]:-${SCRIPT_NAME}}
 			local msg=${1:+($1)}
 			#log "< $func_name:$LINENO "$msg"" "TRACE" "$LOG_TRACE_COLOR"				
-			log "TRACE" "< $func_name:$LINENO "$msg"" "$LOG_TRACE_COLOR"				
+			log "TRACE" "$func_name:$LINENO "$msg"" "$LOG_TRACE_COLOR"				
 		}
 		;;
 	bash) shift;

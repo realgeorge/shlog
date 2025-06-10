@@ -3,35 +3,24 @@
 # Optional: Define LOG_PATH to capture logs
 # Optional: Define LOG_LEVEL_STDOUT to  
 # LOG_PATH="./my.log"
+LOG_LEVEL_MODE="DEBUG"
 source ./includes/zlog.sh
-
-local usage=(
-)
-
-log "bar" ; return 1
-
-function foo() {
-	trace_in
-	log info		"This is info";
-	log success "This is success"
-	log wtf "Did it work?"
-	trace_out
-}
-
-foo
 
 for style in "standard" "enhanced" "classic"; do
 	LOG_FORMAT_PRESET=$style
-	printf "------------------Style: %s------------------\n" "$style"
-	log_info "this is a test"
+	printf			"-----------------------Style: %s-----------------------\n" "$style"
+	trace_in		"Here we enter"
+	log info		"This is warning";
+	log success "This is success"
+	log warning "This is warning"
+	log error		"This is error"
+	log debug		"This is debug"
+	trace_out		"Here we exit"
 done
-log_info "Begin first test with log set to info mode "
+printf "%s\n"		"-------------------------------------------------------" 
 
-# This should not output anything. 
-SCRIPTENTRY "This should not output anything" 
-trace_in		"This should not output anything"
-trace_out		"This should not output anything"
-SCRIPTEXIT	"This should not output anything"
+LOG_LEVEL_DEBUG="INFO"
+LOG_LEVEL_LOG="INFO"
 
 sleep 2
 log_success "We successfully passed the first test!"
@@ -42,9 +31,6 @@ log_info "Begin second test with log set to debug mode"
 LOG_LEVEL_STDOUT="DEBUG"
 LOG_LEVEL_LOG="DEBUG"
 
-# Script_entry (run as early as possible after defining
-SCRIPTENTRY
-sleep 1; return 1
 function dig_pirate_gold() {
   trace_in   # We add "trace_in" in top of every function
 
