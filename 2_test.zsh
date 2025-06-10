@@ -5,13 +5,25 @@
 # LOG_PATH="./my.log"
 source ./includes/zlog.sh
 
+local usage=(
+)
+
+log "bar" ; return 1
+
 function foo() {
 	trace_in
+	log info		"This is info";
+	log success "This is success"
+	log wtf "Did it work?"
+	trace_out
 }
+
+foo
 
 for style in "standard" "enhanced" "classic"; do
 	LOG_FORMAT_PRESET=$style
 	printf "------------------Style: %s------------------\n" "$style"
+	log_info "this is a test"
 done
 log_info "Begin first test with log set to info mode "
 
