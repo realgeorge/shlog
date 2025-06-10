@@ -1,0 +1,118 @@
+[2025-06-10 01:01:07] - [INFO]    Starting log in with logging mode set to info
+[2025-06-10 01:01:07] - [TRACE] > 
+[2025-06-10 01:01:07] - [INFO]    Starting program
+[2025-06-10 01:01:07] - [TRACE] > 
+[2025-06-10 01:01:07] - [INFO]    Digging for pirate gold...
+[2025-06-10 01:01:07] - [DEBUG]   Searching on island: Hisingen
+[2025-06-10 01:01:09] - [WARNING] This is taking a longer time than expected...
+[2025-06-10 01:01:09] - [SUCCESS] We successfully got some pirate gold!
+[2025-06-10 01:01:09] - [TRACE] < 
+[2025-06-10 01:01:09] - [TRACE] > 
+[2025-06-10 01:01:09] - [INFO]    Getting hosting...
+[2025-06-10 01:01:09] - [INFO]    Hostname is: fedora
+[2025-06-10 01:01:09] - [TRACE] < 
+[2025-06-10 01:01:09] - [ERROR]   I'm done but I'm going to show an error instead
+[2025-06-10 01:01:09] - [INFO]    This INFO message should NOT appear on STDOUT.
+[2025-06-10 01:01:09] - [WARNING] This WARNING message SHOULD appear on STDOUT.
+[2025-06-10 01:01:09] - [ERROR]   This ERROR message SHOULD appear on STDOUT.
+[2025-06-10 01:01:09] - [TRACE] < 
+[2025-06-10 01:03:58] - [INFO]    Starting log in with logging mode set to info
+[2025-06-10 01:03:58] - [TRACE] > 
+[2025-06-10 01:03:58] - [INFO]    Starting program
+[2025-06-10 01:03:58] - [TRACE] > 
+[2025-06-10 01:03:58] - [INFO]    Digging for pirate gold...
+[2025-06-10 01:03:58] - [DEBUG]   Searching on island: Hisingen
+[2025-06-10 01:04:00] - [WARNING] This is taking a longer time than expected...
+[2025-06-10 01:04:00] - [SUCCESS] We successfully got some pirate gold!
+[2025-06-10 01:04:00] - [TRACE] < 
+[2025-06-10 01:04:00] - [TRACE] > 
+[2025-06-10 01:04:00] - [INFO]    Getting hosting...
+[2025-06-10 01:04:00] - [INFO]    Hostname is: fedora
+[2025-06-10 01:04:00] - [TRACE] < 
+[2025-06-10 01:04:00] - [ERROR]   I'm done but I'm going to show an error instead
+[2025-06-10 01:04:00] - [INFO]    This INFO message should NOT appear on STDOUT.
+[2025-06-10 01:04:00] - [WARNING] This WARNING message SHOULD appear on STDOUT.
+[2025-06-10 01:04:00] - [ERROR]   This ERROR message SHOULD appear on STDOUT.
+[2025-06-10 01:04:00] - [TRACE] < 
+[2025-06-10 01:04:38] - [INFO]     Starting log in with logging mode set to info
+[2025-06-10 01:04:38] - [TRACE]  > 
+[2025-06-10 01:04:38] - [INFO]     Starting program
+[2025-06-10 01:04:38] - [TRACE]  > 
+[2025-06-10 01:04:38] - [INFO]     Digging for pirate gold...
+[2025-06-10 01:04:38] - [DEBUG]    Searching on island: Hisingen
+[2025-06-10 01:04:40] - [WARNING]  This is taking a longer time than expected...
+[2025-06-10 01:04:40] - [SUCCESS]  We successfully got some pirate gold!
+[2025-06-10 01:04:40] - [TRACE]  < 
+[2025-06-10 01:04:40] - [TRACE]  > 
+[2025-06-10 01:04:40] - [INFO]     Getting hosting...
+[2025-06-10 01:04:40] - [INFO]     Hostname is: fedora
+[2025-06-10 01:04:40] - [TRACE]  < 
+[2025-06-10 01:04:40] - [ERROR]    I'm done but I'm going to show an error instead
+[2025-06-10 01:04:40] - [INFO]     This INFO message should NOT appear on STDOUT.
+[2025-06-10 01:04:40] - [WARNING]  This WARNING message SHOULD appear on STDOUT.
+[2025-06-10 01:04:40] - [ERROR]    This ERROR message SHOULD appear on STDOUT.
+[2025-06-10 01:04:40] - [TRACE]  < 
+[2025-06-10 01:05:04] - [INFO]     Starting log in with logging mode set to info
+[2025-06-10 01:05:04] - [TRACE] > 
+[2025-06-10 01:05:04] - [INFO]     Starting program
+[2025-06-10 01:05:04] - [TRACE] > 
+[2025-06-10 01:05:04] - [INFO]     Digging for pirate gold...
+[2025-06-10 01:05:04] - [DEBUG]    Searching on island: Hisingen
+[2025-06-10 01:05:06] - [WARNING]  This is taking a longer time than expected...
+[2025-06-10 01:05:06] - [SUCCESS]  We successfully got some pirate gold!
+[2025-06-10 01:05:06] - [TRACE] < 
+[2025-06-10 01:05:06] - [TRACE] > 
+[2025-06-10 01:05:06] - [INFO]     Getting hosting...
+[2025-06-10 01:05:06] - [INFO]     Hostname is: fedora
+[2025-06-10 01:05:06] - [TRACE] < 
+[2025-06-10 01:05:06] - [ERROR]    I'm done but I'm going to show an error instead
+[2025-06-10 01:05:06] - [INFO]     This INFO message should NOT appear on STDOUT.
+[2025-06-10 01:05:06] - [WARNING]  This WARNING message SHOULD appear on STDOUT.
+[2025-06-10 01:05:06] - [ERROR]    This ERROR message SHOULD appear on STDOUT.
+[2025-06-10 01:05:06] - [TRACE] < 
+[2025-06-10 01:07:09] - [INFO]     Starting log in with logging mode set to info
+[2025-06-10 01:07:09] - [TRACE] > 
+[2025-06-10 01:07:09] - [INFO]     Starting program
+[2025-06-10 01:07:09] - [TRACE] > 
+[2025-06-10 01:07:09] - [INFO]     Digging for pirate gold...
+[2025-06-10 01:07:09] - [DEBUG]    Searching on island: Hisingen
+[2025-06-10 01:07:11] - [WARNING]  This is taking a longer time than expected...
+[2025-06-10 01:07:11] - [SUCCESS]  We successfully got some pirate gold!
+[2025-06-10 01:07:11] - [TRACE] < 
+[2025-06-10 01:07:11] - [TRACE] > 
+[2025-06-10 01:07:11] - [INFO]     Getting hosting...
+[2025-06-10 01:07:11] - [INFO]     Hostname is: fedora
+[2025-06-10 01:07:11] - [TRACE] < 
+[2025-06-10 01:07:11] - [ERROR]    I'm done but I'm going to show an error instead
+[2025-06-10 01:07:11] - [INFO]     This INFO message should NOT appear on STDOUT.
+[2025-06-10 01:07:11] - [WARNING]  This WARNING message SHOULD appear on STDOUT.
+[2025-06-10 01:07:11] - [ERROR]    This ERROR message SHOULD appear on STDOUT.
+[2025-06-10 01:07:11] - [TRACE] < 
+[2025-06-10 01:14:04] - [INFO]     Begin first test with log set to info mode ...
+[2025-06-10 01:15:08] - [INFO]     Begin first test with log set to info mode ...
+[2025-06-10 01:16:07] - [INFO]     Begin first test with log set to info mode ...
+[2025-06-10 01:16:09] - [SUCCESS]  We successfully passed the first test!
+[2025-06-10 01:16:09] - [INFO]     Begin second test with log set to debug mode
+[2025-06-10 01:16:09] - [INFO]     Starting program
+[2025-06-10 01:16:09] - [INFO]     Digging for pirate gold...
+[2025-06-10 01:16:11] - [WARNING]  This is taking a longer time than expected...
+[2025-06-10 01:16:11] - [SUCCESS]  We successfully got some pirate gold!
+[2025-06-10 01:16:11] - [INFO]     Getting hosting...
+[2025-06-10 01:16:11] - [INFO]     Hostname is: fedora
+[2025-06-10 01:16:11] - [ERROR]    I'm done but I'm going to show an error instead
+[2025-06-10 01:16:11] - [INFO]     This INFO message should NOT appear on STDOUT.
+[2025-06-10 01:16:11] - [WARNING]  This WARNING message SHOULD appear on STDOUT.
+[2025-06-10 01:16:11] - [ERROR]    This ERROR message SHOULD appear on STDOUT.
+[2025-06-10 01:16:40] - [INFO]     Begin first test with log set to info mode ...
+[2025-06-10 01:16:42] - [SUCCESS]  We successfully passed the first test!
+[2025-06-10 01:16:42] - [INFO]     Begin second test with log set to debug mode
+[2025-06-10 01:16:42] - [INFO]     Starting program
+[2025-06-10 01:16:42] - [INFO]     Digging for pirate gold...
+[2025-06-10 01:16:45] - [WARNING]  This is taking a longer time than expected...
+[2025-06-10 01:16:45] - [SUCCESS]  We successfully got some pirate gold!
+[2025-06-10 01:16:45] - [INFO]     Getting hosting...
+[2025-06-10 01:16:45] - [INFO]     Hostname is: fedora
+[2025-06-10 01:16:45] - [ERROR]    I'm done but I'm going to show an error instead
+[2025-06-10 01:16:45] - [INFO]     This INFO message should NOT appear on STDOUT.
+[2025-06-10 01:16:45] - [WARNING]  This WARNING message SHOULD appear on STDOUT.
+[2025-06-10 01:16:45] - [ERROR]    This ERROR message SHOULD appear on STDOUT.

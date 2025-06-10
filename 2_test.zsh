@@ -2,16 +2,29 @@
 
 # Optional: Define LOG_PATH to capture logs
 # Optional: Define LOG_LEVEL_STDOUT to  
-LOG_PATH="./my.log"
+# LOG_PATH="./my.log"
 source ./includes/zlog.sh
 
-log_info "Starting log in with LOG_LEVEL_STDOUT and LOG_LEVEL_LOG set to INFO"
+function foo() {
+	trace_in
+}
 
-# This should not output anything alternatively four warnings. 
-SCRIPTENTRY
-trace_in
-trace_out
-SCRIPTEXIT
+for style in "standard" "enhanced" "classic"; do
+	LOG_FORMAT_PRESET=$style
+	printf "------------------Style: %s------------------\n" "$style"
+done
+log_info "Begin first test with log set to info mode "
+
+# This should not output anything. 
+SCRIPTENTRY "This should not output anything" 
+trace_in		"This should not output anything"
+trace_out		"This should not output anything"
+SCRIPTEXIT	"This should not output anything"
+
+sleep 2
+log_success "We successfully passed the first test!"
+
+log_info "Begin second test with log set to debug mode"
 
 # Set log level thresholds for testing
 LOG_LEVEL_STDOUT="DEBUG"
@@ -19,7 +32,7 @@ LOG_LEVEL_LOG="DEBUG"
 
 # Script_entry (run as early as possible after defining
 SCRIPTENTRY
-
+sleep 1; return 1
 function dig_pirate_gold() {
   trace_in   # We add "trace_in" in top of every function
 
