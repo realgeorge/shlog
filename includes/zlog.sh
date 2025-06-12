@@ -7,6 +7,7 @@
 # http://github.com/swelljoe/slog
 # -------------------------------------------------------------------
 
+# Exit on error
 set -e
 
 LOG_PRINT_USAGE() {
@@ -14,20 +15,25 @@ LOG_PRINT_USAGE() {
 Usage: ./your_script.sh [options]
 
 Options:
-  sh|zsh|bash             Set the script extension (affects \$SCRIPT_EXTENSION)
-  -h, --help              Show this help message and exit
+  sh|zsh|bash                 Set the script extension (affects \$SCRIPT_EXTENSION)
+  -h, --help                  Show this help message and exit
+  -c, --config                Configuration file location
+  -o, --output                Set the output log file path
+                              Same as \$LOG_PATH
 
-  -c, --config MODE       Set the log level mode (e.g., DEBUG, INFO, etc.)
-  -f, --format STYLE      Set the log output format
-                          Available: standard, enhanced, classic
 
-  -o, --output PATH       Set the output log file path
 
-  -log--level LEVEL       Set the minimum log level to log to file
-                          Available: DEBUG, INFO, SUCCESS, WARNING, ERROR
+Styles:                       Availabel: enhanced, standard, classic
+  -s, --style                 Set the log output format, default is enhanced
+      --custom-labels         Enable custom labels (boolean)
 
-  -stdout-level LEVEL     Set the minimum log level to print to stdout
-                          Available: DEBUG, INFO, SUCCESS, WARNING, ERROR
+Logging levels:               Availabel: info, success, warning, error, debug
+  -L, --log-level-global      Override global log levels, default is info
+                              Same as \$LOG_LEVEL_DEFAULT
+      --log-level-log         Set the minimum log level to log to file 
+                              Same as \$LOG_LEVEL_LOG
+      --log-level-stdout      Set the minimum log level to print to stdout 
+                              Same as \$LOG_LEVEL_STDOUT
 
 Examples:
   ./your_script.sh bash -f symmetric -c DEBUG -o /tmp/log.txt
@@ -36,6 +42,28 @@ Examples:
 EOF
 }
 
+# TODO: log usage documentation
+# Usage log [label] [text] -l 10 -t 10
+
+# TODO: install.sh
+LOG_CONFIG_DEFAULT_LOCATION="${XDG_CONFIG_HOME:-$HOME/.config}/shlog"
+LOG_CONFIG_CUSTOM_LOCATION="" # This should be set as a global env path
+LOG_CONFIG_AUTO_LOCATION="${LOG_CONFIG_CUSTOM_LOCATION:-$LOG_CONFIG_DEFAULT_LOCATION}"
+
+# Move default to custom if needed
+if [ -n "$LOG_CONFIG_CUSTOM_LOCATION" ] && [ -d "$LOG_CONFIG_DEFAULT_LOCATION" ] && [ ! -d "$LOG_CONFIG_CUSTOM_LOCATION" ]; then
+	mkdir -p "$(dirname "$LOG_CONFIG_CUSTOM_LOCATION")"
+	mv -n "$LOG_CONFIG_DEFAULT_LOCATION" "$LOG_CONFIG_CUSTOM_LOCATION"
+fi
+
+# Create auto location if still missing
+if [ ! -d "$LOG_CONFIG_AUTO_LOCATION" ]; then
+	mkdir -p "$LOG_CONFIG_AUTO_LOCATION" || echo "Failed to create directory: $LOG_CONFIG_AUTO_LOCATION" >&2
+fi
+
+# TODO: shlog_parse.sh
+
+LOG_CHECK_FLAG() { [ -n "$2" ] && echo "$1 requires an argument" >&2 }
 while [ $# -gt 0 ]; do
 	case "$1" in
 		sh|zsh|bash)
@@ -44,61 +72,64 @@ while [ $# -gt 0 ]; do
 			;;
 
 		-h|--help)
-			LOG_PRINT_USAGE
-			exit 0
-			;;
+      LOG_PRINT_USAGE
+      exit 0
+      ;;
 
-		-c|--config)
-			if [ -z "$2" ]; then
-				echo "Error: --config requires an argument" >&2
-			fi
+    -c|--config)
+      LOG_CHECK_FLAG "-c, --config" "$2" || return 1
+      LOG_CONFIG_LOCATION
+      shift 2
+      continue
+      ;;
 
-			LOG_LEVEL_MODE=$2
-			shift 2
-			;;
+    -o|--output)
+      LOG_CHECK_FLAG "-o, --output" "$2" || return 1
+      LOG_PATH="$2"
+      shift 2
+      continue
+      ;;
 
-		-f|--format)
-			if [ -z "$2" ]; then
-				echo "Error: --config requires an argument" >&2
-			fi
+    -s|--style)
+      LOG_CHECK_FLAG "-S, --style" "$2" || return 1
+      LOG_PRESET_FORMAT="$2"
+      shift 2
+      continue
+      ;;
 
-			LOG_PRESET_FORMAT=$2
-			shift 2
-			;;
+    --custom-labels)
+      LOG_USE_CUSTOM_LABELS=1
+      ;;
 
-		-o|--output)
-			if [ -z "$2" ]; then
-				echo "Error: --output requires an argument" >&2
-			fi
+    -L|--log-level-global)
+      LOG_CHECK_FLAG "-L, --log-level" "$2" || return 1
+      LOG_LEVEL_DEFAULT=$(echo "$2" | tr '[:lower:]' '[:upper:]')
+      shift 2
+      continue
+      ;;
 
-			LOG_PATH=$2
-			shift 2
-			;;
+    --log-level-log)
+      LOG_CHECK_FLAG "--log-level-log" "$2" || return 1
+      LOG_LEVEL_LOG="$2"
+      shift 2
+      continue
+      ;;
 
-		-log--level)
-			if [ -z "$2" ]; then
-				echo "Error: --log-level requires an argument" >&2
-			fi
+    --log-level-stdout)
+      LOG_CHECK_FLAG "--log-level-stdout" "$2" || return 1
+      LOG_LEVEL_STDOUT="$2"
+      shift 2
+      continue
+      ;;
 
-			LOG_LEVEL_LOG=$2
-			shift 2
-			;;
-
-		-stdout-level)
-			if [ -z "$2" ]; then
-				echo "Error: --stdout-level requires an argument" >&2
-			fi
-
-			LOG_LEVEL_STDOUT=$2
-			shift 2
-			;;
-
-		*) 
-			echo "Unknown option: $1" >&2
-			shift
-			;;
-	esac
+    *) 
+      echo "Unknown option: $1" >&2
+      shift
+      continue
+      ;;
+  esac
 done
+
 
 # LOG_PATH - Define $LOG_PATH in your script to log a file, otherwise 
 # just write to STDOUT
@@ -106,15 +137,15 @@ done
 
 # LOG_LEVEL_MODE - Define $LOG_LEVEL_MODE to change the log level preset,
 # By default, this value is set to INFO
-LOG_LEVEL_MODE="${LOG_LEVEL_MODE:-INFO}"
+LOG_LEVEL_DEFAULT="${LOG_LEVEL_DEFAULT:-INFO}"
 
 # LOG_LEVEL_STDOUT - Define the lowest level which goes to STDOUT
 # By default, all logs will be written to STDOUT
-LOG_LEVEL_STDOUT="${LOG_LEVEL_MODE:-INFO}"
+LOG_LEVEL_STDOUT="${LOG_LEVEL_DEFAULT:-INFO}"
 
 # LOG_LEVEL_LOG - Define to determine which level goes to LOG_PATH 
 # By default, all log levels will be written to LOG_PATH
-LOG_LEVEL_LOG="${LOG_LEVEL_MODE:-INFO}"
+LOG_LEVEL_LOG="${LOG_LEVEL_DEFAULT:-INFO}"
 
 # Useful global variables that users may wish to reference
 SCRIPT_ARGS="$@"
@@ -144,7 +175,8 @@ then
 	LOG_WARNING_COLOR=""
 	LOG_DEBUG_COLOR=""
 	LOG_TRACE_COLOR=""
-	LOG_CUSTOM_COLOR=""
+  LOG_TEXT_COLOR=""
+  LOG_LABEL_COLOR=""
 else
 	LOG_DEFAULT_COLOR="$(tput sgr0)"
 	LOG_ERROR_COLOR="$(tput setaf 1)"
@@ -153,72 +185,254 @@ else
 	LOG_WARNING_COLOR="$(tput setaf 3)"
 	LOG_DEBUG_COLOR="$(tput setaf 4)"
 	LOG_TRACE_COLOR="$(tput setaf 8)"
+  LOG_TEXT_COLOR=""
+  LOG_LABEL_COLOR=""
 fi
 
 # Formatting
-strip_ansi() {
-	sed 's/\x1b\[[0-9;]*m//g'
+strip_ansi() { sed 's/\x1b\[[0-9;]*m//g' }
+is_int() { [ -n "$1" ] && printf %d "$1" >/dev/null 2>&1 }
+repeat_char() {
+	char=$1; count=$2
+	while [ "$count" -gt 0 ]; do
+		printf "%s" "$char"
+		count=$((count - 1))
+	done
+}
+
+LOG_PARSE_ARGS() {
+
+	# echo "fun_call: $@"
+	# Reset all loging-related states
+  unset log_level log_label log_text log_text_color log_label_color
+	unset label_flag text_flag color_flag
+	unset log_parsed_kwargs log_kwargs log_args log_parsed_arg
+	unset log_add_args log_add_kwargs
+	unset log_badopt log_badopt_len log_badopt_l_offset
+
+	# Parse args for log function call
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+			-h|--help)
+				# TODO
+				;;
+
+			-t|-T)
+				# Handle text color flag
+				text_flag=1
+				log_add_kwargs "$1" "$2"
+
+				[ -n "$2" ] && log_text_color=$2 
+				[ -n "$2" ] && shift 2 || shift 1
+				continue
+				;;
+
+			-l|-L)
+				# Handle label color flag
+				label_flag=1
+				log_add_kwargs "$1" "$2"
+
+				[ -n "$2" ] && log_label_color=$2
+				[ -n "$2" ] && shift 2 || shift 1
+				continue
+				;;
+			
+			*[0-9]*|LOG_*_COLOR)
+				# Handle direct color codes or env color vars
+				log_add_args "$1"
+
+				[ -z "$log_label_color" ] && log_label_color=$1 && shift && continue
+				[ -z "$log_text_color" ] && log_text_color=$1 && shift && continue
+				;;
+
+			-*)
+				echo "Should be equal to $log_count"
+				log_add_kwargs "$1" "$2"
+				log_badopt=${log_badopt:-$1}
+				log_badopt_l_offset="${log_badopt_l_offset:-$((${#log_args} - ${#2} + ${#1}))}"
+				[ -n "$2" ] && shift 2 || shift 1
+				continue
+				;;
+			*)
+				log_add_args "$1"
+
+				# Positional arguments: label, then text
+				[ -z "$log_label" ] && log_label=$1 && shift && continue
+				[ -z "$log_text" ] && log_text=$1 && shift && continue
+				shift
+				continue
+				;;
+		esac
+		shift
+	done
+
+	# Infer color behavior if only one color flag is used:
+	if [ "$text_flag" = "1" ] && [ "$label_flag" != "1" ]; then
+		# -t was used, -l was not
+		log_label_color="LOG_INFO_COLOR"
+	elif [ "$label_flag" = "1" ] && [ "$text_flag" != "1" ]; then
+		# -l was used, -t was not
+		log_text_color="LOG_INFO_COLOR"
+	elif [ -z "$log_label_color" ] && [ -n "$log_label_color" ]; then
+		log_label_color=$log_text_color
+	elif [ -z "$log_text_color" ] && [ -n "$log_text_color" ]; then
+		log_text_color=$log_label_color
+	# else
+	# 	log_text_color="LOG_INFO_COLOR"
+	# 	log_label_color="LOG_INFO_COLOR"
+	fi
+
+	# If custom labels are disable, move label into text
+	if [ "$LOG_USE_CUSTOM_LABELS" = "0" ]; then
+		log_text="$log_label $log_text"
+		log_label=""
+	fi
+
+	# If we have a bad option print it to stdout
+	[ -n "$log_badopt" ] && LOG_PARSE_OPTERR
+	return 0
+}
+
+log_add_kwargs() {
+	log_parsed_kwargs="$1 $2"
+	log_kwargs="${log_kwargs:+$log_kwargs }$log_parsed_kwargs"
+	log_args="${log_args:+$log_args }$log_parsed_kwargs"
+	log_count=${#log_args}
+}
+
+log_add_args() {
+	log_parsed_arg=$1
+	log_args="${log_args:+$log_args }$log_parsed_arg"
+	log_count=${#log_args}
+}
+
+# Function: LOG_PARSE_OPTERR
+# Prints a warning for unrecognized log option, with offsets to show error location visually.
+LOG_PARSE_OPTERR() {
+	log_func_name="log "
+	log_func_call="log $log_args"
+	printf "WARNING: Unknown option detected: %s\n" "$log_func_call"
+
+	# Aritmetic vars to determine position of bad arg
+	log_func_call_offset=$((34))
+	log_args_len=${#log_args} # XXX
+	log_kwargs_len=${#log_kwargs} # XXX
+	log_badopt_len=${#log_badopt}
+
+	if [ "$log_badopt_len" -eq 1 ]; then
+		log_badopt_len=$((2))
+		log_badopt_l_offset=$(($log_badopt_l_offset + 1))
+	fi
+
+	# See repeat_char func
+	repeat_char " " "$log_func_call_offset"
+	repeat_char "~" "$(($log_badopt_l_offset))"
+	repeat_char "^" "$(($log_badopt_len - 1))"
+
+	#print_log_vars
+	printf "\n"
+	
+	# Cleanup
+	unset log_badopt log_badopt_len log_badopt_l_offset
+	unset log_kwargs log_kwargs_len
+	unset log_args log_args_len
+	unset log_func_call	log_func_call_offset
+	return 1
+}
+
+print_log_vars() {
+	log_args_len=${#log_args}
+	log_kwargs_len=${#log_kwargs}
+
+	echo "log_args: $log_args"
+	echo "log_kwargs: $log_kwargs"
+	# echo "log_level: $log_level"
+	echo "log_label: $log_label"
+	echo "log_text: $log_text"
+	echo "log_text_color: $log_text_color"
+	echo "log_label_color: $log_label_color"
+	echo "log_args_len = $log_args_len"
+	echo "should be equal to log_count: $log_count"
+	echo
 }
 
 log() {
-	# local log_text="$1"
-	# local log_level="$2"
-	# local log_text_color="$3"
-
-	local log_level=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-	local log_text="$2"
-	local log_text_color="$3"
+  # Parse arguments passed to `log`
+  LOG_PARSE_ARGS $@	
 
 	# Levels for comparing against LOG_LEVEL_STDOUT and LOG_LEVEL_LOG
-	# Define log level integers
-	local LOG_LEVEL_TRACE=0
-	local LOG_LEVEL_DEBUG=0
-	local LOG_LEVEL_INFO=1
-	local LOG_LEVEL_SUCCESS=2
-	local LOG_LEVEL_WARNING=3
-	local LOG_LEVEL_ERROR=4
-	
-	# Validate levels since they'll be eval-ed
-	
-	case $log_level in
-		DEBUG|INFO|SUCCESS|WARNING|ERROR|TRACE) ;;
-		*) foo="$1 $log_text"; log_level=""			;; 
-	esac
-	case $LOG_LEVEL_STDOUT in
-		DEBUG|INFO|SUCCESS|WARNING|ERROR|TRACE) ;;
-		*) LOG_LEVEL_STDOUT=INFO								;;
-	esac
-	case $LOG_LEVEL_LOG in
-		DEBUG|INFO|SUCCESS|WARNING|ERROR|TRACE) ;;
-		*) LOG_LEVEL_LOG=INFO										;;
-	esac
+	LOG_LEVEL_TRACE=0
+	LOG_LEVEL_DEBUG=0
+  LOG_LEVEL_CUSTOM=0
+	LOG_LEVEL_INFO=1
+	LOG_LEVEL_SUCCESS=2
+	LOG_LEVEL_WARNING=3
+  LOG_LEVEL_ERROR=4
+	LOG_LEVEL_CUSTOM=5
 
 	# Default level to info
-	[ -z ${log_level} ] && log_level="INFO"
-	[ -z ${log_color} ] && log_color="LOG_INFO_COLOR"
-	
-	# Normalize the format of arguments passed to `log`
-  # Ensures output is clean by avoiding unintended leading spaces 
-	[ -z ${foo} ] || log_text=$(printf "%s" "$foo") 
+	[ -z "$log_level" ] && log_level="INFO"
+	[ -z "$log_text_color" ] && log_text_color="LOG_INFO_COLOR"
+	[ -z "$log_label_color" ] && log_label_color="LOG_INFO_COLOR"
+
+  # Extract the log_level from the label
+  case $log_label in
+    DEBUG|INFO|SUCCESS|WARNING|ERROR|TRACE)
+       log_level="$1"                             ;;
+    *) log_level="CUSTOM"                         ;;
+  esac
+	# Validate levels since they'll be eval-ed
+	case $LOG_LEVEL_STDOUT in
+		DEBUG|INFO|SUCCESS|WARNING|ERROR|TRACE|CUSTOM) ;;
+		*) LOG_LEVEL_STDOUT=INFO				               ;;
+	esac
+	case $LOG_LEVEL_LOG in
+		DEBUG|INFO|SUCCESS|WARNING|ERROR|TRACE|CUSTOM) ;;
+		*) LOG_LEVEL_LOG=INFO                          ;;
+	esac
+  # Validate custom color
+  case $log_text_color in
+    *[0-9]*) LOG_TEXT_COLOR="$(tput setaf $log_text_color)"         ;;
+    *DEBUG*|*INFO*|*SUCCESS*|*WARNING*|*ERROR*|*TRACE*|*CUSTOM*)    ;;
+		*) 
+      printf "WARNING: \`%s\` is not a valid color\n" "$log_text_color"  ;; 
+  esac
+	case $log_label_color in
+    *[0-9]*) LOG_LABEL_COLOR=$(tput setaf $log_label_color)         ;;
+    *DEBUG*|*INFO*|*SUCCESS*|*WARNING*|*ERROR*|*TRACE*|*CUSTOM*)		;;
+    *)
+      printf "WARNING: \`%s\` is not a valid color\n" "$log_label_color" ;; 
+  esac
 
 	# Check LOG_LEVEL_STDOUT to see if this level of entry goes to STDOUT
 	# XXX This is the horror that happens when your language doesn't have a hash data struct
 	eval log_level_int="\$LOG_LEVEL_${log_level}";
 	eval log_level_stdout="\$LOG_LEVEL_${LOG_LEVEL_STDOUT}";
-	eval log_label_color="\$LOG_${log_level}_COLOR"	
-
-	case $LOG_FORMAT_PRESET in
-		# symmetric) log_prefix=$(printf "[%s]%*s" "$log_level" $((9 - ${#log_level} - 2)) "") ;;
-		enhanced) log_prefix=$( [ $log_level = "TRACE" ] && echo "[TRACE] >" || printf "[%s]%*s" "$log_level" $((9 - ${#log_level} - 2)) "" ) ;; # Width = 9 - length of log_level - 2 (for [ and ] )
-		standard) log_prefix="[${log_level}]" ;;
-		classic)  log_prefix="${log_level}:"  ;;
+	if ! is_int $log_label_color; then 
+		eval log_label_color="\$LOG_${log_level}_COLOR"
+	fi
+	if ! is_int $log_text_color; then
+		eval log_text_color="\$LOG_${log_level}_COLOR"
+	fi
+  
+  # This is where we format the different styles
+	case "$LOG_FORMAT_PRESET" in	
+		enhanced)
+			if [ "$log_level" = "TRACE" ]; then
+				log_prefix="[TRACE] >"
+			else
+				log_prefix=$(printf "[%s]%*s" "$log_label" $((9 - ${#log_label} - 2)) "" )		
+			fi
+			;;
+		standard) log_prefix="[${log_label}]" ;;
+		classic)  log_prefix="${log_label}:"  ;;
 		*) echo "Unknown style: $LOG_FORMAT_PRESET (use: symmetric|simple|classic)" ;;
 	esac
 
 	#echo "$log_level_stdout $log_level_int"; return 1
 	if [ $log_level_stdout -le $log_level_int ]; then
 		# STDOUT
-		printf "${log_label_color}[%s] %s ${log_text_color}%s${LOG_DEFAULT_COLOR}\n" "$(date +"%Y-%m-%d %H:%M:%S")" "$log_prefix" "$log_text"
+		printf "${LOG_LABEL_COLOR-log_label_color}[%s] %s${LOG_DEFAULT_COLOR} ${LOG_TEXT_COLOR-log_text_color}%s${LOG_DEFAULT_COLOR}\n" "$(date +"%Y-%m-%d %H:%M:%S")" "$log_prefix" "$log_text"
 	fi
 	eval log_level_log="\$LOG_LEVEL_${LOG_LEVEL_LOG}"
 
