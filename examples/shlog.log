@@ -1,0 +1,98 @@
+[2025-06-15 06:04:11] [info] This is warning
+[2025-06-15 06:04:11] [success] This is success
+[2025-06-15 06:04:11] [warning] This is warning
+[2025-06-15 06:04:11] [error] This is error
+[2025-06-15 06:04:11] [info]    This is warning
+[2025-06-15 06:04:11] [success] This is success
+[2025-06-15 06:04:11] [warning] This is warning
+[2025-06-15 06:04:11] [error]   This is error
+[2025-06-15 06:04:12] info: This is warning
+[2025-06-15 06:04:12] success: This is success
+[2025-06-15 06:04:12] warning: This is warning
+[2025-06-15 06:04:12] error: This is error
+[2025-06-15 06:04:14] SUCCESS: We successfully passed the first test! 
+[2025-06-15 06:04:14] INFO: Begin second test with log set to debug mode 
+[2025-06-15 06:05:41] [info] This is warning
+[2025-06-15 06:05:41] [success] This is success
+[2025-06-15 06:05:41] [warning] This is warning
+[2025-06-15 06:05:41] [error] This is error
+[2025-06-15 06:05:41] [info]    This is warning
+[2025-06-15 06:05:41] [success] This is success
+[2025-06-15 06:05:41] [warning] This is warning
+[2025-06-15 06:05:41] [error]   This is error
+[2025-06-15 06:05:41] info: This is warning
+[2025-06-15 06:05:41] success: This is success
+[2025-06-15 06:05:41] warning: This is warning
+[2025-06-15 06:05:41] error: This is error
+[2025-06-15 06:05:43] SUCCESS: We successfully passed the first test! 
+[2025-06-15 06:05:43] INFO: Begin second test with log set to debug mode 
+[2025-06-15 06:06:51] [info] This is warning
+[2025-06-15 06:06:51] [success] This is success
+[2025-06-15 06:06:51] [warning] This is warning
+[2025-06-15 06:06:52] [error] This is error
+[2025-06-15 06:06:52] [info]    This is warning
+[2025-06-15 06:06:52] [success] This is success
+[2025-06-15 06:06:52] [warning] This is warning
+[2025-06-15 06:06:52] [error]   This is error
+[2025-06-15 06:06:52] info: This is warning
+[2025-06-15 06:06:52] success: This is success
+[2025-06-15 06:06:52] warning: This is warning
+[2025-06-15 06:06:52] error: This is error
+[2025-06-15 06:06:54] SUCCESS: We successfully passed the first test! 
+[2025-06-15 06:06:54] INFO: Begin second test with log set to debug mode 
+[2025-06-15 06:07:40] [info] This is warning
+[2025-06-15 06:07:40] [success] This is success
+[2025-06-15 06:07:40] [warning] This is warning
+[2025-06-15 06:07:40] [error] This is error
+[2025-06-15 06:07:40] [info]    This is warning
+[2025-06-15 06:07:40] [success] This is success
+[2025-06-15 06:07:40] [warning] This is warning
+[2025-06-15 06:07:40] [error]   This is error
+[2025-06-15 06:07:40] info: This is warning
+[2025-06-15 06:07:40] success: This is success
+[2025-06-15 06:07:40] warning: This is warning
+[2025-06-15 06:07:40] error: This is error
+[2025-06-15 06:07:42] SUCCESS: We successfully passed the first test! 
+[2025-06-15 06:07:42] INFO: Begin second test with log set to debug mode 
+[2025-06-15 06:08:06] [info] This is warning
+[2025-06-15 06:08:06] [success] This is success
+[2025-06-15 06:08:06] [warning] This is warning
+[2025-06-15 06:08:06] [error] This is error
+[2025-06-15 06:08:06] [info]    This is warning
+[2025-06-15 06:08:06] [success] This is success
+[2025-06-15 06:08:06] [warning] This is warning
+[2025-06-15 06:08:06] [error]   This is error
+[2025-06-15 06:08:06] info: This is warning
+[2025-06-15 06:08:06] success: This is success
+[2025-06-15 06:08:06] warning: This is warning
+[2025-06-15 06:08:06] error: This is error
+[2025-06-15 06:08:08] SUCCESS: We successfully passed the first test! 
+[2025-06-15 06:08:08] INFO: Begin second test with log set to debug mode 
+[2025-06-15 06:08:31] [info] This is warning
+[2025-06-15 06:08:31] [success] This is success
+[2025-06-15 06:08:31] [warning] This is warning
+[2025-06-15 06:08:31] [error] This is error
+[2025-06-15 06:08:31] [info]    This is warning
+[2025-06-15 06:08:31] [success] This is success
+[2025-06-15 06:08:31] [warning] This is warning
+[2025-06-15 06:08:31] [error]   This is error
+[2025-06-15 06:08:32] info: This is warning
+[2025-06-15 06:08:32] success: This is success
+[2025-06-15 06:08:32] warning: This is warning
+[2025-06-15 06:08:32] error: This is error
+[2025-06-15 06:08:34] SUCCESS: We successfully passed the first test! 
+[2025-06-15 06:08:34] INFO: Begin second test with log set to debug mode 
+[2025-06-15 06:09:02] [info] This is warning
+[2025-06-15 06:09:02] [success] This is success
+[2025-06-15 06:09:02] [warning] This is warning
+[2025-06-15 06:09:02] [error] This is error
+[2025-06-15 06:09:02] [info]    This is warning
+[2025-06-15 06:09:02] [success] This is success
+[2025-06-15 06:09:02] [warning] This is warning
+[2025-06-15 06:09:02] [error]   This is error
+[2025-06-15 06:09:02] info: This is warning
+[2025-06-15 06:09:02] success: This is success
+[2025-06-15 06:09:02] warning: This is warning
+[2025-06-15 06:09:02] error: This is error
+[2025-06-15 06:09:05] SUCCESS: We successfully passed the first test! 
+[2025-06-15 06:09:05] INFO: Begin second test with log set to debug mode 

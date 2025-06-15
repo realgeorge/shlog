@@ -1,0 +1,12 @@
+[2025-06-15 06:02:16] [INFO]    This is an INFO message. 
+[2025-06-15 06:02:16] [SUCCESS] This is a SUCCESS message. 
+[2025-06-15 06:02:16] [WARNING] This is a WARNING message. 
+[2025-06-15 06:02:16] [ERROR]   This is an ERROR message. 
+[2025-06-15 06:02:16] [DEBUG]   This is a DEBUG message. 
+[2025-06-15 06:02:16] [TRACE] > ../includes/shlog.sh:5 (Entering function test_func) 
+[2025-06-15 06:02:16] [TRACE] > ../includes/shlog.sh:5 (Exiting function test_func) 
+[2025-06-15 06:02:16] [TRACE] > ../includes/shlog.sh:5 (Script entry point) 
+[2025-06-15 06:02:16] [TRACE] > ../includes/shlog.sh:5 (Script exit point) 
+[2025-06-15 06:02:16] [INFO]    This INFO message should NOT appear on STDOUT. 
+[2025-06-15 06:02:16] [WARNING] This WARNING message SHOULD appear on STDOUT. 
+[2025-06-15 06:02:16] [ERROR]   This ERROR message SHOULD appear on STDOUT. 
