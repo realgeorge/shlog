@@ -1,13 +1,4 @@
 #!/bin/sh
-# -------------------------------------------------------------------
-# slog - Makes logging in POSIX shell scripting suck less
-# Copyright (c) Fred Palmer
-# POSIX version Copyright Joe Cooper
-# Licensed under the MIT license
-# http://github.com/swelljoe/slog
-# -------------------------------------------------------------------
-
-# Exit on error
 set -e
 
 LOG_PRINT_USAGE() {
@@ -151,9 +142,6 @@ while [ $# -gt 0 ]; do
       continue
       ;;
 
-		-q|--quiet) # TODO: 
-			;;
-
 		--load-config) 
 			LOG_CHECK_FLAG "--load-config" "$2"
 			[ -z "$2" ] && log_config_location="./config/shlog.conf"
@@ -281,8 +269,14 @@ SCRIPT_ARGS="$@"
 SCRIPT_NAME="$0"
 SCRIPT_NAME="${SCRIPT_NAME#\./}"
 SCRIPT_NAME="${SCRIPT_NAME##/*/}"
-SCRIPT_EXTENSION=$(ps -p "$$" -o comm=)
-SCRIPT_EXTENSION="${SCRIPT_EXTENSION##*.}"
+
+
+# Detect which shell is running
+case "${ZSH_VERSION:+zsh}:${BASH_VERSION:+bash}" in
+	zsh:*)  SCRIPT_EXTENSION="zsh"  ;;
+	*:bash) SCRIPT_EXTENSION="bash" ;;
+	*)      SCRIPT_EXTENSION="sh"   ;;
+esac
 
 # Determines if we print color or not
 if ! tty -s; then
@@ -335,16 +329,10 @@ strip_ansi() { sed "s/[[:cntrl:]]\[[0-9;]*m//g" ;}
 is_int()  { case "$1" in '' | *[!0-9]*) return 1;; esac ;}
 in_range() { is_int "$1" && [ "$1" -le 256 ] && return 0 ;}
 
-# String helper functions
+# Repeat character, used for tracing cause of error
 repeat_char() {
-	unset char count endline
-	char=$1; count=$2; endline=$3
-	is_int $count || return 1 
-	while [ "$count" -gt 0 ]; do
-		printf "%s" "$char"
-		count=$((count - 1))
-	done
-	[ -n "$endline" ] && printf "$endline"
+  char=$1; count=$2
+  printf "%${count}s" "" | tr ' ' "$char"
 }
 
 # Usage: offset=$(find_substring_offset "search" "input" "index")
@@ -359,7 +347,7 @@ find_substring_offset() {
 		esac
 	done
 
-	#printf "ERROR: No match found for '%s' in '%s'\n" "$1" "$2" >&2
+	# printf "ERROR: No match found for '%s' in '%s'\n" "$1" "$2" >&2
 	return 1
 }
 
@@ -446,7 +434,6 @@ log() {
 	unset log_args log_level log_label log_text log_label_upper
 	unset log_label_color log_text_color log_badopt
 	unset text_flag label_flag dmesg LOG_TEXT_COLOR LOG_LABEL_COLOR
-	
 
 	# Parse args from log function call
 	while [ "$#" -gt 0 ]; do
@@ -475,7 +462,9 @@ log() {
 				fi
 				;;
 
-			-*) log_add_badopt "$1" "invalid flag";;
+			-*) 
+        log_add_badopt "$1" "invalid flag"
+        ;;
 
 			*)
 				log_add_args "$1"
@@ -533,7 +522,7 @@ log() {
 	esac
 	case "$log_label_color" in
 		*DEBUG*|*INFO*|*SUCCESS*|*WARNING*|*ERROR*|*TRACE*)	
-			 eval "LOG_LABEL_COLOR="\$LOG_${log_level}_COLOR""	;;
+			 eval "LOG_LABEL_COLOR="\$LOG_${log_level}_COLOR"" ;;
 		*) eval "LOG_LABEL_COLOR="\$(tput setaf $log_label_color)"" ;;
 	esac
 	case "$log_text_color" in
@@ -680,12 +669,129 @@ case "$SCRIPT_EXTENSION" in
 			log "TRACE" "$func_name:$LINENO "$msg"" "$LOG_TRACE_COLOR"				
 		}
 		;;
-	bash) shift;
-		# TODO:
+	bash)
+    # Enable bash-compatible logging functions
+    log_info() {
+      unset msg func_name
+      local func_name="${FUNCNAME[1]}"
+      local msg="$1"
+      log "INFO" "$msg" "$LOG_INFO_COLOR"
+    }
+
+    log_success() {
+      unset msg func_name
+      local func_name="${FUNCNAME[1]}"
+      local msg="$1"
+      log "SUCCESS" "$msg" "$LOG_SUCCESS_COLOR"
+    }
+
+    log_error() {
+      unset msg func_name
+      local func_name="${FUNCNAME[1]}"
+      local msg="$1"
+      log "ERROR" "$msg" "$LOG_ERROR_COLOR"
+    }
+
+    log_warning() {
+      unset msg func_name
+      local func_name="${FUNCNAME[1]}"
+      local msg="$1"
+      log "WARNING" "$msg" "$LOG_WARNING_COLOR"
+    }
+
+    log_debug() {
+      unset msg func_name
+      local func_name="${FUNCNAME[1]}"
+      local msg="$1"
+      log "DEBUG" "$msg" "$LOG_DEBUG_COLOR"
+    }
+
+    SCRIPTENTRY() {
+      unset msg func_name
+      local script_name="${FUNCNAME[1]:-$SCRIPT_NAME}"
+      local msg="${1:+($1)}"
+      log "TRACE" "$script_name:$LINENO $msg" "$LOG_TRACE_COLOR"
+    }
+
+    SCRIPTEXIT() {
+      unset msg func_name
+      local script_name="${FUNCNAME[1]:-$SCRIPT_NAME}"
+      local msg="${1:+($1)}"
+      log "TRACE" "$script_name:$LINENO $msg" "$LOG_TRACE_COLOR"
+    }
+
+    trace_in() {
+      unset msg func_name
+      local func_name="${FUNCNAME[1]:-$SCRIPT_NAME}"
+      local msg="${1:+($1)}"
+      log "TRACE" "$func_name:$LINENO $msg" "$LOG_TRACE_COLOR"
+    }
+
+    trace_out() {
+      unset msg func_name
+      local func_name="${FUNCNAME[1]:-$SCRIPT_NAME}"
+      local msg="${1:+($1)}"
+      log "TRACE" "$func_name:$LINENO $msg" "$LOG_TRACE_COLOR"
+    }
 		;;
 	*)
 		echo "ERROR: Filetype "$SCRIPT_EXTENSION" not compatible with logging tool "
 		return 1
 		;;
 esac
-
+# case "$SCRIPT_EXTENSION" in
+# 	sh|bash|zsh)
+# 		# Function stack detection (shell-specific)
+# 		get_func_name() {
+# 			case "$SCRIPT_EXTENSION" in
+# 				zsh)  printf "%s" "${funcstack[2]}" ;;
+# 				bash) printf "%s" "${FUNCNAME[1]}"  ;;
+# 				*)    printf "%s" "$SCRIPT_NAME"    ;;
+# 			esac
+# 		}
+#
+# 		# Generic log wrappers
+# 		log_info()    { log "INFO"    "$1" "$LOG_INFO_COLOR"; }
+# 		log_success() { log "SUCCESS" "$1" "$LOG_SUCCESS_COLOR"; }
+# 		log_error()   { log "ERROR"   "$1" "$LOG_ERROR_COLOR"; }
+# 		log_warning() { log "WARNING" "$1" "$LOG_WARNING_COLOR"; }
+# 		log_debug()   { log "DEBUG"   "$1" "$LOG_DEBUG_COLOR"; }
+# 		log_trace()   { log "TRACE"   "$1" "$LOG_TRACE_COLOR"; }
+#
+# 		# Script entry/exit tracing
+# 		SCRIPTENTRY() {
+# 			local func_name script_name msg
+# 			func_name=$(get_func_name)
+# 			script_name="${func_name:-$SCRIPT_NAME}"
+# 			msg="${1:+($1)}"
+# 			log "TRACE" "$script_name:$LINENO $msg" "$LOG_TRACE_COLOR"
+# 		}
+#
+# 		SCRIPTEXIT() {
+# 			local func_name script_name msg
+# 			func_name=$(get_func_name)
+# 			script_name="${func_name:-$SCRIPT_NAME}"
+# 			msg="${1:+($1)}"
+# 			log "TRACE" "$script_name:$LINENO $msg" "$LOG_TRACE_COLOR"
+# 		}
+#
+# 		trace_in() {
+# 			local func_name msg
+# 			func_name=$(get_func_name)
+# 			msg="${1:+($1)}"
+# 			log "TRACE" "$func_name:$LINENO $msg" "$LOG_TRACE_COLOR"
+# 		}
+#
+# 		trace_out() {
+# 			local func_name msg
+# 			func_name=$(get_func_name)
+# 			msg="${1:+($1)}"
+# 			log "TRACE" "$func_name:$LINENO $msg" "$LOG_TRACE_COLOR"
+# 		}
+# 		;;
+#
+# 	*)
+# 		printf "ERROR: Unsupported script type '%s'\n" "$SCRIPT_EXTENSION" >&2
+# 		exit 1
+# 		;;
+# esac

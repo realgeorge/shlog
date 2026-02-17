@@ -1,8 +1,8 @@
-#!/bin/zsh
+#!/bin/env bash
 
 # Optional: define LOG_PATH to capture logs
 LOG_PATH="./my.log"
-. ./includes/zlog.sh
+source ../includes/shlog.sh --log-level-log INFO --LOG_LEVEL_STDOUT INFO
 
 # Set log level thresholds for testing
 LOG_LEVEL_STDOUT="DEBUG"
@@ -26,8 +26,8 @@ log_error "This is an ERROR message."
 log_debug "This is a DEBUG message."
 
 # Test trace entry and exit logs
-trace_begin "Entering function test_func"
-trace_end "Exiting function test_func"
+trace_in "Entering function test_func"
+trace_out "Exiting function test_func"
 
 # Test SCRIPTENTRY and SCRIPTEXIT (zsh specific)
 SCRIPTENTRY "Script entry point"
@@ -48,5 +48,5 @@ if [ -f "$LOG_PATH" ]; then
   cat "$LOG_PATH"
 fi
 
-echo "slog zsh test complete."
+echo "shlog sh test complete."
 
