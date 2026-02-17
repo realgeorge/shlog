@@ -1,6 +1,6 @@
-#!/bin/zsh
+#!/bin/env zsh
 
-. ../includes/shlog.sh zsh
+source ../includes/shlog.sh zsh
 
 for style in "standard" "enhanced" "classic"; do
 	LOG_FORMAT_PRESET=$style
