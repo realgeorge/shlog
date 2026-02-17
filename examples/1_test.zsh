@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/env zsh
 
 # Optional: define LOG_PATH to capture logs
 LOG_PATH="./my.log"
