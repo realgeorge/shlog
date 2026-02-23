@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+
 # shlog - A POSIX-compliant logging tool
 #
 # Copyright (c) 2026 realgeorge
@@ -12,89 +13,6 @@ if [ -n "$SHLOG_LOADED" ]; then
 else
     SHLOG_LOADED=1
 fi
-
-# ---------------------------------------------------------------------------
-# Parsing
-# ---------------------------------------------------------------------------
-shlog_usage() {
-    cat <<-EOF
-    Usage: source ./shlog.sh [options]
-
-    Options:
-    -h, --help                Show this help message and exit
-    -o, --output              Set the output log file path
-                              Same as \$LOG_PATH
-
-    Styles:                   Available: enhanced, standard, classic
-    -s, --style               Set the log output format, default is enhanced
-
-    Logging levels:           Available: info, success, warning, error, debug
-    -L, --log-level-default   Override global log levels, default is info
-                              Same as \$LOG_LEVEL_DEFAULT
-        --log-level-log       Set the minimum log level to log to file 
-                              Same as \$_lvl_log
-        --log-level-stdout    Set the minimum log level to print to stdout 
-                              Same as \$_lvl_stdout
-	EOF
-}
-
-opterr() { printf "ERROR: %s %s\n" "$1" "$2" >&2 && exit 1; }
-require_arg() {
-    [ "$#" -ge 2 ] || opterr "$1" "requires an argument."
-    case "$2" in -*) opterr "$1" "invalid argument format." ;; esac
-}
-
-shlog_init() {
-    while [ $# -gt 0 ]; do
-        case "$1" in
-        -h | --help)
-            _shlog_usage
-            exit 0
-            ;;
-
-        -o | --output)
-            require_arg "$@"
-            LOG_PATH="$2"
-            shift 2
-            ;;
-
-        -s | --style)
-            require_arg "$@"
-            LOG_FMT_PRESET="$2"
-            shift 2
-            ;;
-
-        -f | --format)
-            require_arg "$@"
-            LOG_FORMAT="$2"
-            shift 2
-            ;;
-
-        --log-level-default)
-            LOG_LEVEL_DEFAULT="$(set_case "upper" "$2")"
-            shift 2
-            ;;
-
-        --log-level-log)
-            require_arg "$@"
-            _lvl_log="$(set_case "upper" "$2")"
-            shift 2
-            ;;
-
-        --log-level-stdout)
-            require_arg "$@"
-            _lvl_stdout="$2"
-            shift 2
-            ;;
-
-        *)
-            printf "    Unknown option \`%s\`\n" "$1" >&2
-            _shlog_usage
-            shift
-            ;;
-        esac
-    done
-}
 
 # ---------------------------------------------------------------------------
 # Configuration Defaults
@@ -161,7 +79,6 @@ SCRIPT_NAME="${SCRIPT_NAME##/*/}"
 : ${LOG_FMT_SYM_DEBUG:=}
 : ${LOG_FMT_SYM_CUSTOM:=}
 
-
 # ---------------------------------------------------------------------------
 # Levels for comparing against _lvl_stdout and _lvl_log
 # (Higher number = Higher priority)
@@ -178,7 +95,7 @@ LOG_LEVEL_CUSTOM=5
 # Color Definitions
 # -------------------------------------------------------------------
 if [ {$INTERACTIVE_MODE} = "off" ]; then
-    
+
     # We don't care about log colors
     LOG_DEFAULT_COLOR=""
     LOG_INFO_COLOR=""
@@ -282,7 +199,7 @@ _get_val() {
     hostname*) _val="$HOSTNAME" ;;
     scriptname*) _val="$SCRIPT_NAME" ;;
     lineno*) _val="$_caller_lineno" ;;
-    sym*) _val="$_sym";;
+    sym*) _val="$_sym" ;;
     c[1-9]* | c[1-9][0-9]* | c[1-2][0-9][0-9]*)
         _color_code="${1#c}"
         if [ "$_color_code" -le 255 ]; then
@@ -359,7 +276,8 @@ _log_print() {
             case "$_opt" in
             c0 | cd | cl | cm | c[1-9]*)
                 printf "ERROR: Alignment cannot be applied to color tags (%%%s@)\n" "$_opt" >&2
-                return 1 ;;
+                return 1
+                ;;
             esac
             _opt_prefix="${_before##*[$_sp$_tb]}"            # 4. Non-whitespace chars on the left (strict extraction)
             _prefix="${_before%"$_opt_prefix"}"              # 5. Isolate preceding literal text
@@ -408,7 +326,7 @@ _log_print() {
     printf "$_out\n" "$@"
 }
 
-_valid_color_str() { case "$1" in LOG_DEBUG_COLOR|LOG_INFO_COLOR|LOG_SUCCESS_COLOR|LOG_WARNING_COLOR|LOG_ERROR_COLOR|LOG_TRACE_COLOR|LOG_CUSTOM_COLOR) return 0 ;; *) return 1 ;; esac; }
+_valid_color_str() { case "$1" in LOG_DEBUG_COLOR | LOG_INFO_COLOR | LOG_SUCCESS_COLOR | LOG_WARNING_COLOR | LOG_ERROR_COLOR | LOG_TRACE_COLOR | LOG_CUSTOM_COLOR) return 0 ;; *) return 1 ;; esac }
 
 log() {
     unset _lbl _msg _lvl _color _input_color
@@ -417,13 +335,22 @@ log() {
     # the last argument is a color. This is bypassed by setting any color flag
     case "$#" in
     0) printf "WARNING: No message\n" >&2 ;;
-    1) _lbl="INFO"; _msg="$1" ;;
-    2) _lbl="$1";   _msg="$2" ;;
-    *) _lbl="$1"; shift; _msg="$*"
-        
+    1)
+        _lbl="INFO"
+        _msg="$1"
+        ;;
+    2)
+        _lbl="$1"
+        _msg="$2"
+        ;;
+    *)
+        _lbl="$1"
+        shift
+        _msg="$*"
+
         _raw_color=""
         for _raw_color in "$@"; do :; done
-        
+
         _input_color="$_raw_color"
         [ -n "$_raw_color" ] && _msg="${_msg% $_raw_color}"
         ;;
@@ -532,7 +459,6 @@ log_trace_in() { log "TRACE_IN" "$SCRIPT_NAME:$_caller_lineno $*"; }
 log_trace_out() { log "TRACE_OUT" "$SCRIPT_NAME:$_caller_lineno $*"; }
 log_entry() { log "ENTRY" "$0:$_caller_lineno $*"; }
 log_exit() { log "EXIT" "$0:$_caller_lineno $*"; }
-
 
 shopt -s expand_aliases 2>/dev/null || true
 
