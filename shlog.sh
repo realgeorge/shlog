@@ -8,12 +8,6 @@
 #
 # This source code is licensed under the MIT license
 
-if [ -n "$SHLOG_LOADED" ]; then
-    return 0
-else
-    SHLOG_LOADED=1
-fi
-
 # ---------------------------------------------------------------------------
 # Configuration Defaults
 # ---------------------------------------------------------------------------
@@ -21,63 +15,70 @@ fi
 # default values. This allows user-defined settings from config files or
 # command-line arguments to override the defaults initialized below.
 
-# Formatting
-case "${LOG_DATE_FORMAT:-default}" in
-default) log_date_format="%Y-%m-%d %H:%M:%S" ;;
-systemd) log_date_format="%m %d %H:%M:%S" ;;
-*) log_date_format="$LOG_DATE_FORMAT" ;;
-esac
+# ...
+[ -n "$SHLOG_LOADED" ] && return 0
+SHLOG_LOADED=1
 
-# Handle Style Preset fallback if LOG_FORMAT is unset
-# TODO: Add LOG_FORMAT for diffrent levels
-if [ -z "$LOG_FORMAT" ]; then
-    case "${LOG_FMT_PRESET:-default}" in
-    default)
-        : ${LOG_FMT_SYM_ENABLE:=1}
-        : ${LOG_FMT_SYM_ENTRY:=> }
-        : ${LOG_FMT_SYM_TRACE_IN:=> }
-        : ${LOG_FMT_SYM_TRACE:=~ }
-        : ${LOG_FMT_SYM_TRACE_OUT:=< }
-        : ${LOG_FMT_SYM_EXIT:=< }
-        LOG_FORMAT="[%date] [%label@] %sym%message"
-        ;;
-    *)
-        printf "ERROR: Invalid LOG_FMT_PRESET\n" >&2
-        ;;
-    esac
-fi
+# ...
+. "$HOME/Projects/shlog/includes/config.sh"
+. "$HOME/Projects/shlog/includes/parse.sh"
+. "$HOME/Projects/shlog/includes/format.sh"
 
-SCRIPT_ARGS="$@"
-SCRIPT_NAME="$0"
-SCRIPT_NAME="${SCRIPT_NAME#\./}"
-SCRIPT_NAME="${SCRIPT_NAME##/*/}"
+DEFAULT_TEMPLATE="$(SHLOG_GET_TEMPLATE normal)"
+DEFAULT_LEVEL="DEBUG"
+SCRIPT_ARGS=$@
+SCRIPT_NAME=$0
+SCRIPT_NAME=${SCRIPT_NAME#\./}
+SCRIPT_NAME=${SCRIPT_NAME##/*/}
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-: ${LOG_MAX_SIZE:=1048576} # Maxstorlek i bytes (1 MB)
-: ${LOG_MAX_FILES:=5}      # Antal roterade filer att spara
-
-# Prevent double sourcing
+# TODO: Log rotation
+: ${LOG_MAX_SIZE:=1048576}
+: ${LOG_MAX_FILES:=5}
 : ${LOG_PATH:=./shlog.log}
-: ${LOG_LEVEL_DEFAULT:=DEBUG}
-: ${LOG_LEVEL_STDOUT:=DEBUG}
-: ${LOG_LEVEL_LOG:=DEBUG}
-: ${LOG_FMT_PRESET:=default}
-: ${LOG_FMT_OFFSET_DATE:=0}
-: ${LOG_FMT_OFFSET_LABEL:=7}
-: ${LOG_FMT_OFFSET_MESSAGE:=0}
-: ${LOG_FMT_OFFSET_HOSTNAME:=${#HOSTNAME}}
-: ${LOG_FMT_OFFSET_SCRIPTNAME:=${#SCRIPT_NAME}}
-: ${LOG_FMT_OFFSET_LINENO:=0}
-: ${LOG_FMT_SYM_ENTRY:=}
-: ${LOG_FMT_SYM_TRACE_IN:=}
-: ${LOG_FMT_SYM_TRACE:=}
-: ${LOG_FMT_SYM_TRACE_OUT:=}
-: ${LOG_FMT_SYM_EXIT:=}
-: ${LOG_FMT_SYM_INFO:=}
-: ${LOG_FMT_SYM_SUCCESS:=}
-: ${LOG_FMT_SYM_WARNING:=}
-: ${LOG_FMT_SYM_ERROR:=}
-: ${LOG_FMT_SYM_DEBUG:=}
-: ${LOG_FMT_SYM_CUSTOM:=}
+
+# TODO: Test
+: ${LOG_LEVEL:=$DEFAULT_LEVEL}
+: ${LOG_LEVEL_LOG:=$LOG_LEVEL}
+: ${LOG_LEVEL_STDOUT:=$LOG_LEVEL}
+: ${LOG_FORMAT:=$DEFAULT_TEMPLATE}
+: ${LOG_FORMAT_LOG:=$LOG_FORMAT}
+: ${LOG_FORMAT_STDOUT:=$LOG_FORMAT}
+
+# TODO: Should be tested against a _user_modified flag before setting style
+: ${LOG_STYLE:=${LOG_FORMAT:+rich}}
+: ${LOG_STYLE_LOG:=$LOG_STYLE}
+: ${LOG_STYLE_STDOUT:=$LOG_STYLE}
+
+
+# Determines the padding size for fields using the empty '@' modifier.
+# Set to the maximum expected length of the content for auto-alignment.
+# TODO: Test
+_tmp_date=$(date "+$LOG_DATE_FORMAT")
+: ${LOG_FMT_OFFSET_DATE:=${#_tmp_date}}         # Static size
+: ${LOG_FMT_OFFSET_HOSTNAME:=${#HOSTNAME}}      # Static size
+: ${LOG_FMT_OFFSET_SCRIPTNAME:=${#SCRIPT_NAME}} # Static size
+: ${LOG_FMT_OFFSET_LABEL:=7}                    # Fits "SUCCESS" (7 chars)
+: ${LOG_FMT_OFFSET_LINENO:=4}                   # Fits up to "9999"" lines
+: ${LOG_FMT_OFFSET_MESSAGE:=0}                  # Non-deterministic size
+unset _tmp_date
+
+# TODO: Test
+[ ${LOG_FMT_SYM_ENABLE:=1} -eq 0 ] || {
+    : ${LOG_FMT_SYM_ENTRY:=}
+    : ${LOG_FMT_SYM_TRACE_IN:=}
+    : ${LOG_FMT_SYM_TRACE:=}
+    : ${LOG_FMT_SYM_TRACE_OUT:=}
+    : ${LOG_FMT_SYM_EXIT:=}
+    : ${LOG_FMT_SYM_INFO:=}
+    : ${LOG_FMT_SYM_SUCCESS:=}
+    : ${LOG_FMT_SYM_WARNING:=}
+    : ${LOG_FMT_SYM_ERROR:=}
+    : ${LOG_FMT_SYM_DEBUG:=}
+    : ${LOG_FMT_SYM_CUSTOM:=}
+}
+
+SHLOG_APPLY_THEME "$LOG_STYLE"
 
 # ---------------------------------------------------------------------------
 # Levels for comparing against _lvl_stdout and _lvl_log
@@ -91,7 +92,7 @@ LOG_LEVEL_WARNING=3
 LOG_LEVEL_ERROR=4
 LOG_LEVEL_CUSTOM=5
 
-# ---------------------------------------------------------------------------
+# -------------------------------------------------------------------
 # Color Definitions
 # -------------------------------------------------------------------
 if [ {$INTERACTIVE_MODE} = "off" ]; then
@@ -106,14 +107,14 @@ if [ {$INTERACTIVE_MODE} = "off" ]; then
     LOG_TRACE_COLOR=""
     LOG_CUSTOM_COLOR=""
 else
-    LOG_DEFAULT_COLOR="$(tput sgr0)"
-    LOG_INFO_COLOR="$(tput sgr0)"
-    LOG_SUCCESS_COLOR="$(tput setaf 2)"
-    LOG_WARNING_COLOR="$(tput setaf 3)"
-    LOG_ERROR_COLOR="$(tput setaf 1)"
-    LOG_DEBUG_COLOR="$(tput setaf 4)"
-    LOG_TRACE_COLOR="$(tput setaf 8)"
-    : ${LOG_CUSTOM_COLOR:-$(tput setaf 69)}
+    : ${LOG_DEFAULT_COLOR:="$(tput sgr0)"}
+    : ${LOG_INFO_COLOR:="$(tput sgr0)"}
+    : ${LOG_SUCCESS_COLOR:="$(tput setaf 2)"}
+    : ${LOG_WARNING_COLOR:="$(tput setaf 3)"}
+    : ${LOG_ERROR_COLOR:="$(tput setaf 1)"}
+    : ${LOG_DEBUG_COLOR:="$(tput setaf 4)"}
+    : ${LOG_TRACE_COLOR:="$(tput setaf 8)"}
+    : ${LOG_CUSTOM_COLOR:="$(tput setaf 69)"}
 fi
 
 # ---------------------------------------------------------------------------
@@ -137,6 +138,7 @@ strip_ansi() {
     done
 }
 
+# INFO: Can be replaced with | tr [:lower:] [:upper:] later
 set_case() {
     _case=$1
     _str=$2
@@ -178,28 +180,20 @@ debug() {
     done
 }
 
-level_to_int() {
-    case "$1" in
-    DEBUG | TRACE) echo 0 ;;
-    INFO) echo 1 ;;
-    SUCCESS) echo 2 ;;
-    WARNING) echo 3 ;;
-    ERROR) echo 4 ;;
-    CUSTOM) echo 5 ;;
-    *) echo 1 ;;
-    esac
-}
-
 _get_val() {
     case "$1" in
-    c0*) _val="$LOG_DEFAULT_COLOR" ;;
-    date*) _val="$(date +"$log_date_format")" ;;
-    label*) _val="$_lbl" ;;
-    message*) _val="$_msg" ;;
-    hostname*) _val="$HOSTNAME" ;;
-    scriptname*) _val="$SCRIPT_NAME" ;;
-    lineno*) _val="$_caller_lineno" ;;
-    sym*) _val="$_sym" ;;
+    c0*)          _val="$LOG_DEFAULT_COLOR" ;;
+    date*)        _val="$(date +"$LOG_DATE_FORMAT")" ;;
+    label_upper*) _val="$_lbl_upper" ;;
+    label*)       _val="$_lbl" ;;
+    message*)     _val="$_msg" ;;
+    hostname*)    _val="$HOSTNAME" ;;
+    file*)        _val="$SCRIPT_NAME" ;;
+    lineno*)      _val="$_caller_lineno" ;;
+    level_int*)   _val="$_lvl_int" ;;
+    sym*)         _val="$_sym" ;;
+    log_path*)    _val="$LOG_PATH" ;;
+    {*)           _raw="${1#?}"; _val="${_raw%?}" ;;
     c[1-9]* | c[1-9][0-9]* | c[1-2][0-9][0-9]*)
         _color_code="${1#c}"
         if [ "$_color_code" -le 255 ]; then
@@ -209,20 +203,14 @@ _get_val() {
             return 1
         fi
         ;;
-
-    {*)
-        _raw="${1#?}"    # Safely strip the first character '{'
-        _val="${_raw%?}" # Safely strip the last character '}'
-        ;;
     \(*)
+        # XXX: LOCK THIS BEHIND A FLAG OR REMOVE COMPLETELY
+        #      THIS ENABLES ARBITRARY REMOTE CODE EXECUTION
         _cmd="${1#?}"              # Safely strip the first character '('
         _val="$(eval "${_cmd%?}")" # Safely strip the last character ')' and execute
         return 1
         ;;
-    *)
-        _val="%$1"
-        return 1
-        ;; # Restore the % for invalid/unrecognized options
+    *) _val="%$1"; return 1 ;; # Restore the % for invalid/unrecognized options
     esac
     return 0
 }
@@ -231,6 +219,7 @@ _get_val() {
 _log_print() {
     _fmt=$1
     _out="$_color"
+
 
     # Define literal space and tab to bypass shell-specific character class bugs
     _sp=" "
@@ -300,10 +289,6 @@ _log_print() {
                 [ "$_lvl" = "TRACE" ] && _wrap_len="$((_wrap_len - 2))"
             fi
 
-            if [ -n "$LOG_FMT_SYM_ENABLE" ]; then
-                eval "_lbl_suffix=\"\${LOG_FMT_SYM_TRACE_OUT:+\${LOG_FMT_SYM_TRACE_OUT} }\""
-            fi
-
             case "$_opt" in {*} | \(*\)) _wrap_len=-2 ;; esac
 
             case "$_offset" in
@@ -327,6 +312,7 @@ _log_print() {
 }
 
 _valid_color_str() { case "$1" in LOG_DEBUG_COLOR | LOG_INFO_COLOR | LOG_SUCCESS_COLOR | LOG_WARNING_COLOR | LOG_ERROR_COLOR | LOG_TRACE_COLOR | LOG_CUSTOM_COLOR) return 0 ;; *) return 1 ;; esac }
+_sanitize_var() { case "$1" in ''|*[!A-Z0-9_]*) return 1 ;; esac; return 0; }
 
 log() {
     unset _lbl _msg _lvl _color _input_color
@@ -357,6 +343,12 @@ log() {
     esac
 
     _lbl_upper="$(set_case "upper" "$_lbl")"
+
+    # Sanitize label
+    _sanitize_var "$_lbl_upper" || {
+        printf "WARNING: Invalid characters in label '%s'. forcing CUSTOM.\n" "$_lbl_upper" >&2
+        _lbl_upper="CUSTOM"
+    }
 
     # Extract and validate the log level from the label
     case "$_lbl_upper" in
@@ -389,34 +381,49 @@ log() {
     # 1. Apply 8-bit ANSI color code if the argument is an integer (0-255).
     # 2. Apply predefined color variable if the argument is a valid color string.
     # 3. Fallback to the default color for the current log level.
-    if is_uint "$_input_color" && [ "$_color" -le 255 ]; then
+    if is_uint "$_input_color" && [ "$_input_color" -le 255 ]; then
+        # Safe because we check if
         eval "_color=\"\$(tput setaf \"$_input_color\")\""
     elif _valid_color_str "$_input_color"; then
-        eval "_color=\"\$$_input_color\""
+        eval "_color=\"\$$_input_color\"" # Safe: Validated
     else
-        eval "_color=\"\$LOG_${_lvl}_COLOR\""
+        eval "_color=\"\$LOG_${_lvl}_COLOR\"" # Safe: Validated _lvl
     fi
 
     # Resolve the symbol and its conditional spacing
     if [ "${LOG_FMT_SYM_ENABLE:-1}" = "1" ]; then
-        eval "_sym=\"\${LOG_FMT_SYM_${_lbl_upper}:-}\""
+        eval "_sym=\"\${LOG_FMT_SYM_${_lbl_upper}:-}\"" # Safe: Validated
     fi
 
     # Resolve dynamic variables
-    eval "_lvl_int=\"\$LOG_LEVEL_$LOG_LEVEL_LOG\""
-    eval "_lvl_stdout=\"\$LOG_LEVEL_$LOG_LEVEL_STDOUT\""
-    eval "_lvl_log=\"\$LOG_LEVEL_$_lvl_log\""
-    eval "_fmt_lbl=\"\$LOG_FORMAT_$_lbl_upper\""
-    eval "_fmt_lvl=\"\$LOG_FORMAT_$_lvl\""
+    eval "_lvl_int=\"\$LOG_LEVEL_$_lvl\""                        # Safe: Validated
+    eval "_lvl_stdout=\"\$LOG_LEVEL_$LOG_LEVEL_STDOUT\""         # Safe: Validated
+    eval "_lvl_log=\"\$LOG_LEVEL_$LOG_LEVEL_LOG\""               # Safe: Validated
+    eval "_fmt_lbl_stdout=\"\$LOG_FORMAT_${_lbl_upper}_STDOUT\"" # Safe: Validated
+    eval "_fmt_lbl_log=\"\$LOG_FORMAT_${_lbl_upper}_LOG\""       # Safe: Validated
+    eval "_fmt_lvl_stdout=\"\$LOG_FORMAT_${_lvl}_STDOUT\""       # Safe: Validated
+    eval "_fmt_lvl_log=\"\$LOG_FORMAT_${_lvl}_LOG\""             # Safe: Validated
+    eval "_fmt_lbl=\"\$LOG_FORMAT_$_lbl_upper\""                 # Safe: Validated
+    eval "_fmt_lvl=\"\$LOG_FORMAT_$_lvl\""                       # Safe: Validated
 
-    # Priority chain: 1) Label, 2) Level, 3) Default
-    current_log_format="${_fmt_lbl:-${_fmt_lvl:-$LOG_FORMAT}}"
+    # Base Generic Chain: Label > Level > Global LOG_FORMAT
+    _chain_generic="${_fmt_lbl:-${_fmt_lvl:-$LOG_FORMAT}}"
+    
+    # STDOUT Chain: Label_STDOUT > Level_STDOUT > Global LOG_FORMAT_STDOUT
+    _chain_stdout="${_fmt_lbl_stdout:-${_fmt_lvl_stdout:-$LOG_FORMAT_STDOUT}}"
+    
+    # LOG Chain: Label_LOG > Level_LOG > Global LOG_FORMAT_LOG
+    _chain_log="${_fmt_lbl_log:-${_fmt_lvl_log:-$LOG_FORMAT_LOG}}"
 
-    unset _fmt_lbl _fmt_lvl
+    _final_stdout="${_chain_stdout:-$_chain_generic}"
+    _final_log="${_chain_log:-$_chain_generic}"
+
+    unset _fmt_lbl _fmt_lvl _fmt_lbl_stdout _fmt_lvl_stdout \
+        _fmt_lbl_log _fmt_lvl_log _chain_generic _chain_stdout _chain_log
 
     # Print to STDOUT
     if [ "$_lvl_stdout" -le "$_lvl_int" ]; then
-        _log_print "$current_log_format"
+        _log_print "$_final_stdout"
     fi
 
     # Check _lvl_log to see if this level of entry goes to LOG_PATH
@@ -424,7 +431,7 @@ log() {
         if [ "$_lvl_log" -le "$_lvl_int" ]; then
             # Write to LOG_PATH without fancy colors
             if [ -n "$LOG_PATH" ]; then
-                _log_print "$current_log_format" | strip_ansi >>"$LOG_PATH"
+                _log_print "$_final_log" | strip_ansi >>"$LOG_PATH"
             fi
         fi
     fi
