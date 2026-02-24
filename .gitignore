@@ -1,3 +1,7 @@
 **/*.log
-examples/3_test.sh
-examples/3_save-and-load-config.sh
+resources/bin_allowlist.txt
+examples/*
+# includes/config.sh
+# includes/parse.sh
+includes/scratch
+includes/t.sh
