@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-
+#
 # shlog - A POSIX-compliant logging tool
 #
 # Copyright (c) 2026 realgeorge
@@ -15,6 +15,26 @@
 # default values. This allows user-defined settings from config files or
 # command-line arguments to override the defaults initialized below.
 
+# FIXME:
+# ISSUE:
+# BUG:
+# XXX:
+# HACK:
+# WARNING:
+# WARN:
+# OPTIMIZE:
+# OPTIM:
+# PERFORMANCE:
+# PERF:
+# TESTING:
+# TEST:
+# PASSED:
+# FAILED:
+# NOTE:
+# INFO:
+# TODO:
+
+
 # ...
 [ -n "$SHLOG_LOADED" ] && return 0
 SHLOG_LOADED=1
@@ -24,20 +44,22 @@ SHLOG_LOADED=1
 . "$HOME/Projects/shlog/includes/parse.sh"
 . "$HOME/Projects/shlog/includes/format.sh"
 
-DEFAULT_TEMPLATE="$(SHLOG_GET_TEMPLATE normal)"
-DEFAULT_LEVEL="DEBUG"
-SCRIPT_ARGS=$@
+# ...
+SCRIPT_ARGS="$@"
 SCRIPT_NAME=$0
 SCRIPT_NAME=${SCRIPT_NAME#\./}
 SCRIPT_NAME=${SCRIPT_NAME##/*/}
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+
+DEFAULT_TEMPLATE="$(SHLOG_GET_TEMPLATE normal)"
+DEFAULT_LEVEL=DEBUG
 
 # TODO: Log rotation
 : ${LOG_MAX_SIZE:=1048576}
 : ${LOG_MAX_FILES:=5}
 : ${LOG_PATH:=./shlog.log}
 
-# TODO: Test
+# "
 : ${LOG_LEVEL:=$DEFAULT_LEVEL}
 : ${LOG_LEVEL_LOG:=$LOG_LEVEL}
 : ${LOG_LEVEL_STDOUT:=$LOG_LEVEL}
@@ -45,7 +67,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 : ${LOG_FORMAT_LOG:=$LOG_FORMAT}
 : ${LOG_FORMAT_STDOUT:=$LOG_FORMAT}
 
-# TODO: Should be tested against a _user_modified flag before setting style
+# FIX: Should be tested against a _user_modified flag before setting style
 : ${LOG_STYLE:=${LOG_FORMAT:+rich}}
 : ${LOG_STYLE_LOG:=$LOG_STYLE}
 : ${LOG_STYLE_STDOUT:=$LOG_STYLE}
@@ -53,17 +75,24 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 # Determines the padding size for fields using the empty '@' modifier.
 # Set to the maximum expected length of the content for auto-alignment.
-# TODO: Test
+#
 _tmp_date=$(date "+$LOG_DATE_FORMAT")
 : ${LOG_FMT_OFFSET_DATE:=${#_tmp_date}}         # Static size
 : ${LOG_FMT_OFFSET_HOSTNAME:=${#HOSTNAME}}      # Static size
 : ${LOG_FMT_OFFSET_SCRIPTNAME:=${#SCRIPT_NAME}} # Static size
 : ${LOG_FMT_OFFSET_LABEL:=7}                    # Fits "SUCCESS" (7 chars)
 : ${LOG_FMT_OFFSET_LINENO:=4}                   # Fits up to "9999"" lines
-: ${LOG_FMT_OFFSET_MESSAGE:=0}                  # Non-deterministic size
+: ${LOG_FMT_OFFSET_TRACE:=0}                    
+: ${LOG_FMT_OFFSET_ENTRY:=0}                    
+: ${LOG_FMT_OFFSET_EXIT:=0}                    
+: ${LOG_FMT_OFFSET_DEBUG:=0}                    
+: ${LOG_FMT_OFFSET_INFO:=0}                    
+: ${LOG_FMT_OFFSET_SUCCESS:=0}                    
+: ${LOG_FMT_OFFSET_WARNING:=0}                    
+: ${LOG_FMT_OFFSET_ERROR:=0}                    
 unset _tmp_date
 
-# TODO: Test
+# ...
 [ ${LOG_FMT_SYM_ENABLE:=1} -eq 0 ] || {
     : ${LOG_FMT_SYM_ENTRY:=}
     : ${LOG_FMT_SYM_TRACE_IN:=}
@@ -123,6 +152,7 @@ fi
 
 is_int() { case "${1#-}" in '' | *[!0-9]*) return 1 ;; esac }
 is_uint() { case "$1" in '' | *[!0-9]*) return 1 ;; esac }
+is_uint8() { is_uint "$1" && test "$1" -lt 256; }
 
 strip_ansi() {
     _esc=$(printf '\033')
@@ -181,6 +211,7 @@ debug() {
 }
 
 _get_val() {
+    _color_code="${1#c}"
     case "$1" in
     c0*)          _val="$LOG_DEFAULT_COLOR" ;;
     date*)        _val="$(date +"$LOG_DATE_FORMAT")" ;;
@@ -188,31 +219,50 @@ _get_val() {
     label*)       _val="$_lbl" ;;
     message*)     _val="$_msg" ;;
     hostname*)    _val="$HOSTNAME" ;;
-    file*)        _val="$SCRIPT_NAME" ;;
+    filename*)    _val="$SCRIPT_NAME" ;;
     lineno*)      _val="$_caller_lineno" ;;
     level_int*)   _val="$_lvl_int" ;;
     sym*)         _val="$_sym" ;;
     log_path*)    _val="$LOG_PATH" ;;
-    {*)           _raw="${1#?}"; _val="${_raw%?}" ;;
-    c[1-9]* | c[1-9][0-9]* | c[1-2][0-9][0-9]*)
-        _color_code="${1#c}"
-        if [ "$_color_code" -le 255 ]; then
-            _val="$(tput setaf $_color_code)"
-        else
-            _val="%$1"
-            return 1
-        fi
+    c[1-9]*)      _val="%$1"               # Invalid color
+        is_uint8 "${1#c}" && _val="${1#c}" # Valid color
         ;;
+    {*) 
+        _raw="${1#?}"    # Strip first '{'
+        _val="${_raw%?}" # Strip last '}'
+        ;;
+    # c[1-9]* | c[1-9][0-9]* | c[1-2][0-9][0-9]*)
+    #     _color_code="${1#c}"
+    #     if [ "$_color_code" -le 255 ]; then
+    #         _val="$(tput setaf $_color_code)"
+    #     else
+    #         _val="%$1"
+    #         return 1
+    #     fi
+    #     ;;
     \(*)
-        # XXX: LOCK THIS BEHIND A FLAG OR REMOVE COMPLETELY
-        #      THIS ENABLES ARBITRARY REMOTE CODE EXECUTION
+        # FIXME: LOCK THIS BEHIND A FLAG OR REMOVE COMPLETELY
+        #        THIS ENABLES ARBITRARY REMOTE CODE EXECUTION
         _cmd="${1#?}"              # Safely strip the first character '('
         _val="$(eval "${_cmd%?}")" # Safely strip the last character ')' and execute
         return 1
         ;;
     *) _val="%$1"; return 1 ;; # Restore the % for invalid/unrecognized options
     esac
+
+    # HACK: Could implement a smart alignment by combining LOG_FMT_OFFSET_OPT with
+    #       LOG_FMT_LONGEST_OPT
+
     return 0
+}
+
+# foo() { printf "Input: %s\nPattern: %s\n" "$1" "$2"; case "$1" in $2) echo "Match" ;; *) echo "No match" ;; esac; }
+_sanitize_var() { case "$1" in ''|*[!A-Z0-9_]*) return 1 ;; esac; return 0; }
+_paterr() {
+    _opt="$_opt$1"
+    printf 'Warning: shlog.sh:_log_print: bad pattern `%%%s` %s %s\n' "${_opt}${1}" ${2+\(\$1} "${2+$2)}"
+    # _fmt_mode="normal"
+    exit 2
 }
 
 # Available options date, label, message, hostname, script, line
@@ -220,7 +270,7 @@ _log_print() {
     _fmt=$1
     _out="$_color"
 
-
+    
     # Define literal space and tab to bypass shell-specific character class bugs
     _sp=" "
     _tb="	"
@@ -228,88 +278,111 @@ _log_print() {
     # Clear positional parameters to build the printf argument list
     set --
 
-    while case "$_fmt" in *%*) true ;; *) false ;; esac do
+    while case "$_fmt" in *%*) true ;; *) false ;; esac; do
         _before="${_fmt%%\%*}"
         _after_percent="${_fmt#*\%}"
+        _max_width=0
 
-        # 1. Safely extract _opt, accommodating braces and parentheses
+        # Safely extract _opt, accommodating braces and parentheses
         case "$_after_percent" in
-        {*)
-            _opt="${_after_percent%%\}*}"
-            _opt="${_opt}}"
-            ;;
-        \(*)
-            _opt="${_after_percent%%\)*}"
-            _opt="${_opt})"
-            ;;
-        *) _opt="${_after_percent%%[!a-zA-Z0-9_]*}" ;;
+        {*)  _opt="${_after_percent%%\}*}"; _opt="${_opt}}" ;;
+        \(*) _opt="${_after_percent%%\)*}"; _opt="${_opt})" ;;
+        *)   _opt="${_after_percent%%[!a-zA-Z0-9_]*}"       ;;
         esac
 
-        # 2. Identify the string immediately following the extracted option
-        _remainder_after_opt="${_after_percent#"$_opt"}"
+        # Identify the string immediately following the extracted option
+        _after_opt="${_after_percent#"$_opt"}"
 
-        # 3. Detect mode: Does the string immediately following the option start with '@'?
-        case "$_remainder_after_opt" in
-        @*) _fmt_mode="align" ;;
-        *) _fmt_mode="normal" ;;
+        # Detect mode: Does the string immediately following the option start with a modifer '@' or '?'
+        case "$_after_opt" in
+        [@?][@?]*)           _paterr "${_after_opt%${_after_opt#??}}"   ;;
+        [?][!0-9]*)          _paterr "?" "must be followed by a number" ;;
+        c[0-9]*[!%]*@)       _paterr "@" "cannot align colors"          ;;
+        [?][0-9]*[@][1-9]*)  _paterr "?@" "Use @offset,max_width"       ;;
+        [@][1-9-]*[?][0-9]*) _paterr "@?" "Use @pos,max_width"          ;;
+        [@][0-9-]*[,][0-9]*) _fmt_mode=","                              ;; 
+        [?]*)                _fmt_mode="?"                              ;;
+        [@]*)                _fmt_mode="@"                              ;;
+        *)                   _fmt_mode="none"                           ;;
         esac
 
-        if [ "$_fmt_mode" = "normal" ]; then
-            _prefix="$_before"           # 4. Literal text before the %
-            _out="${_out}${_prefix}%s"   # 5. Append literal text to _out followed by %s
-            _get_val "$_opt"             # 6. Resolve value
-            _fmt="$_remainder_after_opt" # 7. Advance the string past the option
-            set -- "$@" "$_val"          # 8. Append to printf arguments
+        if [ "$_fmt_mode" = "none" ]; then
+            _prefix="$_before"           # Literal text before the %
+            _out="${_out}${_prefix}%s"   # Append literal text to _out followed by %s
+            _get_val "$_opt"             # Resolve value
+            _fmt="$_after_opt"           # Advance the string past the option
+            set -- "$@" "$_val"          # Append to printf arguments
         else
-            # Reject alignment on color variables
-            case "$_opt" in
-            c0 | cd | cl | cm | c[1-9]*)
-                printf "ERROR: Alignment cannot be applied to color tags (%%%s@)\n" "$_opt" >&2
-                return 1
+            _full_mod="${_after_opt%%[$_sp$_tb%]*}"
+
+            _offset=""
+            _max_width=""
+            _opt_suffix=""
+
+            case "$_fmt_mode" in
+            ",") # @PADDING,WIDTH (e.g. @5,2ms)
+                _body="${_full_mod#@}"               # Strip @ -> 5,2ms
+                _offset="${_body%%,*}"               # 5
+                _body="${_body#*,}"                  # 2ms
+                _max_width="${_body%%[!0-9]*}"       # 2
+                _opt_suffix="${_body#"$_max_width"}" # ms
+                ;;
+            "?") # ?WIDTH (e.g. ?2ms)
+                _body="${_full_mod#\?}"              # 2ms
+                _max_width="${_body%%[!0-9]*}"       # 2
+                _opt_suffix="${_body#"$_max_width"}" # ms
+                ;;
+            "@") # @PADDING (e.g. @5ms)
+                _body="${_full_mod#@}"               # 5ms
+                _offset="${_body%%[!0-9-]*}"         # 5
+                _opt_suffix="${_body#"$_offset"}"    # ms
                 ;;
             esac
-            _opt_prefix="${_before##*[$_sp$_tb]}"            # 4. Non-whitespace chars on the left (strict extraction)
-            _prefix="${_before%"$_opt_prefix"}"              # 5. Isolate preceding literal text
-            _get_val "$_opt"                                 # 6. Resolve value
-            _after_at="${_remainder_after_opt#@}"            # 7. Strip the strictly identified '@' symbol
-            _right_part="${_after_at%%[$_sp$_tb%]*}"         # 8. Extract suffix, stopping at whitespace or next %
-            _offset="${_right_part%%[!0-9-]*}"               # 9. Numeric padding offset
-            _opt_suffix="${_right_part#"$_offset"}"          # 10. Remaining suffix wrapper
-            _opt_glued="${_opt_prefix}${_val}${_opt_suffix}" # 11. Reconstruct aligned string
 
-            # 12. Calculate dynamic padding offset
+            _opt_prefix="${_before##*[$_sp$_tb]}"   
+            _prefix="${_before%"$_opt_prefix"}"     
+            _get_val "$_opt"
+            _ret=$?
+
+            _opt_glued="${_opt_prefix}${_val}${_opt_suffix}" 
+
+            # Calculate Offset
             _wrap_len=0
-
-            _is_valid=$?
-            # Apply dynamic offset only if not provided AND option is valid
-            if [ -z "$_offset" ] && [ "$_is_valid" -eq 0 ]; then
+            case "$_opt" in {*} | \(*\)) _wrap_len=-2 ;; esac
+            
+            if [ -z "$_offset" ] && [ $_ret -eq 0 ]; then
                 _wrap_len=$((${#_opt_prefix} + ${#_opt_suffix}))
-                _safe_opt=$(set_case "upper" "$_opt")
+                _safe_opt=$(set_case "upper" "$_opt") 
                 eval "_offset=\$(( -\${LOG_FMT_OFFSET_${_safe_opt}:-0} ))"
-                [ "$_lvl" = "TRACE" ] && _wrap_len="$((_wrap_len - 2))"
+                # [ "$_lvl" = "TRACE" ] && _wrap_len="$((_wrap_len + $LOG_FMT_OFFSET_TRACE))"
             fi
 
-            case "$_opt" in {*} | \(*\)) _wrap_len=-2 ;; esac
+            _wrap_len="$((_wrap_len + ${_fmt_lvl_offset:-0}))" # Add LOG_FMT_OFFSET_<LEVEL/LABEL>
 
             case "$_offset" in
-            -*) _offset="-$((${_offset#-} + _wrap_len))" ;;
-            *[0-9]*) _offset="$((_offset + _wrap_len))" ;;
+                -*) _offset="-$((${_offset#-} + _wrap_len))" ;;
+                *[0-9]*) _offset="$((_offset + _wrap_len))" ;;
             esac
 
-            _out="${_out}${_prefix}%${_offset}s" # 13. Inject padding
-            _fmt="${_after_at#"$_right_part"}"   # 14. Advance the string
-            set -- "$@" "$_opt_glued"            # 15. Append to printf arguments
+            _out="${_out}${_prefix}%${_offset}s"
+
+            # ADVANCE: Safely strip the fully consumed modifier block
+            _fmt="${_after_opt#"$_full_mod"}" 
+
+            set -- "$@" "$_opt_glued"
         fi
     done
 
     # Append any remaining literal text after the final variable
     _out="${_out}${_fmt}${LOG_DEFAULT_COLOR:-$(tput sgr0)}"
     _opts="$@"
-    # debug _out _opts
+    debug _out _opts
 
     # Output the fully resolved format string
     printf "$_out\n" "$@"
 }
+
+_log_print "$1"
 
 _valid_color_str() { case "$1" in LOG_DEBUG_COLOR | LOG_INFO_COLOR | LOG_SUCCESS_COLOR | LOG_WARNING_COLOR | LOG_ERROR_COLOR | LOG_TRACE_COLOR | LOG_CUSTOM_COLOR) return 0 ;; *) return 1 ;; esac }
 _sanitize_var() { case "$1" in ''|*[!A-Z0-9_]*) return 1 ;; esac; return 0; }
@@ -405,6 +478,7 @@ log() {
     eval "_fmt_lvl_log=\"\$LOG_FORMAT_${_lvl}_LOG\""             # Safe: Validated
     eval "_fmt_lbl=\"\$LOG_FORMAT_$_lbl_upper\""                 # Safe: Validated
     eval "_fmt_lvl=\"\$LOG_FORMAT_$_lvl\""                       # Safe: Validated
+    eval "_fmt_lvl_offset=\"\${LOG_FMT_OFFSET_$_lbl_upper:-0}\""  # Safe: Validated
 
     # Base Generic Chain: Label > Level > Global LOG_FORMAT
     _chain_generic="${_fmt_lbl:-${_fmt_lvl:-$LOG_FORMAT}}"
