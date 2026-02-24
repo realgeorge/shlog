@@ -31,14 +31,10 @@
 # from $SHLOG_CONF. This version would need a build/install script.
 # -----------------------------------------------------------------
 
-# TODO: Add compatability for function loading and alias expansion to capture lineno.
+# TODO: Add compatability for function loading and alias expansion
+#       to capture lineno.
+
 LOAD_CONFIG() {
-    conf="$1"
-    echo "$PWD" && exit 0
-
-    # Check if config
-    [ -s "$conf" ] || exit 2
-
     # Setting 'IFS' tells 'read' where to split the string.
     while IFS='=' read -r key val; do
         # Skip over lines containing comments.
