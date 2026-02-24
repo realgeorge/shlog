@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+# test_print_format.sh
+
+source "$PWD/shlog.sh"
+source "$PWD/includes/config.sh"
+LOAD_CONFIG "$PWD/resources/example.conf"
+
+debug LOG_MAX_SIZE
+debug LOG_MAX_FILES
+debug LOG_PATH
+debug LOG_FMT_PRESET
+debug LOG_FMT_OFFSET_DATE
+debug LOG_FMT_OFFSET_LABEL
+debug LOG_FMT_OFFSET_MESSAGE
+debug LOG_FMT_OFFSET_HOSTNAME
+debug LOG_FMT_OFFSET_SCRIPTNAME
+debug LOG_FMT_OFFSET_LINENO
+debug LOG_FMT_SYM_ENTRY
+debug LOG_FMT_SYM_TRACE_IN
+debug LOG_FMT_SYM_TRACE
+debug LOG_FMT_SYM_TRACE_OUT
+debug LOG_FMT_SYM_EXIT
+debug LOG_FMT_SYM_INFO
+debug LOG_FMT_SYM_SUCCESS
+debug LOG_FMT_SYM_WARNING
+debug LOG_FMT_SYM_ERROR
+debug LOG_FMT_SYM_DEBUG
+debug LOG_FMT_SYM_CUSTOM
+debug LOG_LEVEL_ANYTHING
+debug LOG_FORMAT_ANYTHING
