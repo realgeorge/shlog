@@ -15,26 +15,6 @@
 # default values. This allows user-defined settings from config files or
 # command-line arguments to override the defaults initialized below.
 
-# FIXME:
-# ISSUE:
-# BUG:
-# XXX:
-# HACK:
-# WARNING:
-# WARN:
-# OPTIMIZE:
-# OPTIM:
-# PERFORMANCE:
-# PERF:
-# TESTING:
-# TEST:
-# PASSED:
-# FAILED:
-# NOTE:
-# INFO:
-# TODO:
-
-
 # ...
 [ -n "$SHLOG_LOADED" ] && return 0
 SHLOG_LOADED=1
@@ -59,53 +39,28 @@ DEFAULT_LEVEL=DEBUG
 : ${LOG_MAX_FILES:=5}
 : ${LOG_PATH:=./shlog.log}
 
-# "
+# ...
 : ${LOG_LEVEL:=$DEFAULT_LEVEL}
-: ${LOG_LEVEL_LOG:=$LOG_LEVEL}
 : ${LOG_LEVEL_STDOUT:=$LOG_LEVEL}
+: ${LOG_LEVEL_LOG:=$LOG_LEVEL_STDOUT}
 : ${LOG_FORMAT:=$DEFAULT_TEMPLATE}
-: ${LOG_FORMAT_LOG:=$LOG_FORMAT}
 : ${LOG_FORMAT_STDOUT:=$LOG_FORMAT}
-
-# FIX: Should be tested against a _user_modified flag before setting style
+: ${LOG_FORMAT_LOG:=$LOG_FORMAT_STDOUT}
 : ${LOG_STYLE:=${LOG_FORMAT:+rich}}
-: ${LOG_STYLE_LOG:=$LOG_STYLE}
 : ${LOG_STYLE_STDOUT:=$LOG_STYLE}
-
+: ${LOG_STYLE_LOG:=$LOG_STYLE_STDOUT}
 
 # Determines the padding size for fields using the empty '@' modifier.
 # Set to the maximum expected length of the content for auto-alignment.
 #
-_tmp_date=$(date "+$LOG_DATE_FORMAT")
-: ${LOG_FMT_OFFSET_DATE:=${#_tmp_date}}         # Static size
-: ${LOG_FMT_OFFSET_HOSTNAME:=${#HOSTNAME}}      # Static size
-: ${LOG_FMT_OFFSET_SCRIPTNAME:=${#SCRIPT_NAME}} # Static size
-: ${LOG_FMT_OFFSET_LABEL:=7}                    # Fits "SUCCESS" (7 chars)
-: ${LOG_FMT_OFFSET_LINENO:=4}                   # Fits up to "9999"" lines
-: ${LOG_FMT_OFFSET_TRACE:=0}                    
-: ${LOG_FMT_OFFSET_ENTRY:=0}                    
-: ${LOG_FMT_OFFSET_EXIT:=0}                    
-: ${LOG_FMT_OFFSET_DEBUG:=0}                    
-: ${LOG_FMT_OFFSET_INFO:=0}                    
-: ${LOG_FMT_OFFSET_SUCCESS:=0}                    
-: ${LOG_FMT_OFFSET_WARNING:=0}                    
-: ${LOG_FMT_OFFSET_ERROR:=0}                    
-unset _tmp_date
 
-# ...
-[ ${LOG_FMT_SYM_ENABLE:=1} -eq 0 ] || {
-    : ${LOG_FMT_SYM_ENTRY:=}
-    : ${LOG_FMT_SYM_TRACE_IN:=}
-    : ${LOG_FMT_SYM_TRACE:=}
-    : ${LOG_FMT_SYM_TRACE_OUT:=}
-    : ${LOG_FMT_SYM_EXIT:=}
-    : ${LOG_FMT_SYM_INFO:=}
-    : ${LOG_FMT_SYM_SUCCESS:=}
-    : ${LOG_FMT_SYM_WARNING:=}
-    : ${LOG_FMT_SYM_ERROR:=}
-    : ${LOG_FMT_SYM_DEBUG:=}
-    : ${LOG_FMT_SYM_CUSTOM:=}
-}
+_tmp_date=$(date "+$LOG_DATE_FORMAT")
+: ${LOG_FMT_MAX_WIDTH_DATE:=${#_tmp_date}}         # Static size
+: ${LOG_FMT_MAX_WIDTH_HOSTNAME:=${#HOSTNAME}}      # Static size
+: ${LOG_FMT_MAX_WIDTH_SCRIPTNAME:=${#SCRIPT_NAME}} # Static size
+: ${LOG_FMT_MAX_WIDTH_LABEL:=7}                    # Fits "SUCCESS" (7 chars)
+: ${LOG_FMT_MAX_WIDTH_LINENO:=4}                   # Fits up to "9999"" lines
+unset _tmp_date
 
 SHLOG_APPLY_THEME "$LOG_STYLE"
 
@@ -124,7 +79,15 @@ LOG_LEVEL_CUSTOM=5
 # -------------------------------------------------------------------
 # Color Definitions
 # -------------------------------------------------------------------
-if [ {$INTERACTIVE_MODE} = "off" ]; then
+# Determines if we print color or not
+# TODO: Make user configurable
+if ! tty -s; then
+    readonly INTERACTIVE_MODE="off"
+else
+    readonly INTERACTIVE_MODE="on"
+fi
+
+if [ "$INTERACTIVE_MODE" = "off" ]; then
 
     # We don't care about log colors
     LOG_DEFAULT_COLOR=""
@@ -150,9 +113,13 @@ fi
 # Helpers
 # ---------------------------------------------------------------------------
 
-is_int() { case "${1#-}" in '' | *[!0-9]*) return 1 ;; esac }
-is_uint() { case "$1" in '' | *[!0-9]*) return 1 ;; esac }
+is_int() { case "${1#-}" in '' | *[!0-9]*) return 1 ;; esac; }
+is_int8() { is_int "$1" && test "$1" -lt 256; }
+is_uint() { case "$1" in '' | *[!0-9]*) return 1 ;; esac; }
 is_uint8() { is_uint "$1" && test "$1" -lt 256; }
+is_color_str() { case "$1" in LOG_DEBUG_COLOR | LOG_INFO_COLOR | LOG_SUCCESS_COLOR | LOG_WARNING_COLOR | LOG_ERROR_COLOR | LOG_TRACE_COLOR | LOG_CUSTOM_COLOR) return 0 ;; *) return 1 ;; esac }
+is_color() { is_uint8 "$1" || is_color_str "$1"; }
+is_upper_alnum() { case "$1" in '' | *[!A-Z0-9_]*) return 1 ;; esac; return 0; }
 
 strip_ansi() {
     _esc=$(printf '\033')
@@ -210,235 +177,291 @@ debug() {
     done
 }
 
-_get_val() {
-    _color_code="${1#c}"
-    case "$1" in
-    c0*)          _val="$LOG_DEFAULT_COLOR" ;;
-    date*)        _val="$(date +"$LOG_DATE_FORMAT")" ;;
-    label_upper*) _val="$_lbl_upper" ;;
-    label*)       _val="$_lbl" ;;
-    message*)     _val="$_msg" ;;
-    hostname*)    _val="$HOSTNAME" ;;
-    filename*)    _val="$SCRIPT_NAME" ;;
-    lineno*)      _val="$_caller_lineno" ;;
-    level_int*)   _val="$_lvl_int" ;;
-    sym*)         _val="$_sym" ;;
-    log_path*)    _val="$LOG_PATH" ;;
-    c[1-9]*)      _val="%$1"               # Invalid color
-        is_uint8 "${1#c}" && _val="${1#c}" # Valid color
-        ;;
-    {*) 
-        _raw="${1#?}"    # Strip first '{'
-        _val="${_raw%?}" # Strip last '}'
-        ;;
-    # c[1-9]* | c[1-9][0-9]* | c[1-2][0-9][0-9]*)
-    #     _color_code="${1#c}"
-    #     if [ "$_color_code" -le 255 ]; then
-    #         _val="$(tput setaf $_color_code)"
-    #     else
-    #         _val="%$1"
-    #         return 1
-    #     fi
-    #     ;;
-    \(*)
-        # FIXME: LOCK THIS BEHIND A FLAG OR REMOVE COMPLETELY
-        #        THIS ENABLES ARBITRARY REMOTE CODE EXECUTION
-        _cmd="${1#?}"              # Safely strip the first character '('
-        _val="$(eval "${_cmd%?}")" # Safely strip the last character ')' and execute
-        return 1
-        ;;
-    *) _val="%$1"; return 1 ;; # Restore the % for invalid/unrecognized options
-    esac
-
-    # HACK: Could implement a smart alignment by combining LOG_FMT_OFFSET_OPT with
-    #       LOG_FMT_LONGEST_OPT
-
+# foo() { printf "Input: %s\nPattern: %s\n" "$1" "$2"; case "$1" in $2) echo "Match" ;; *) echo "No match" ;; esac; }
+# TODO: Ändra namn till str_sanitize
+is_upper_alnum() {
+    # Usage: is_upper_alnum "string"
+    # Returns: 0 if string is a legal variable name, 1 otherwise
+    case "$1" in *[!A-Z0-9_]*) return 1 ;; esac
     return 0
 }
 
-# foo() { printf "Input: %s\nPattern: %s\n" "$1" "$2"; case "$1" in $2) echo "Match" ;; *) echo "No match" ;; esac; }
-_sanitize_var() { case "$1" in ''|*[!A-Z0-9_]*) return 1 ;; esac; return 0; }
+# XXX: DO NOT REMOVE EXIT
 _paterr() {
-    _opt="$_opt$1"
-    printf 'Warning: shlog.sh:_log_print: bad pattern `%%%s` %s %s\n' "${_opt}${1}" ${2+\(\$1} "${2+$2)}"
+    # Usage: _paterr "pattern" [reason] [message]
+    # Prints: Warning: bad pattern: `pattern` ([pattern message])
+    _get_opt "$1"
+    k=${_key#--}
+    printf 'ERROR: `%%%s`%s%s\n' "${k}" "${2+ ($k}" "${2+ $2)}"
     # _fmt_mode="normal"
     exit 2
 }
 
-# Available options date, label, message, hostname, script, line
-_log_print() {
-    _fmt=$1
-    _out="$_color"
-
-    
-    # Define literal space and tab to bypass shell-specific character class bugs
-    _sp=" "
-    _tb="	"
-
-    # Clear positional parameters to build the printf argument list
-    set --
-
-    while case "$_fmt" in *%*) true ;; *) false ;; esac; do
-        _before="${_fmt%%\%*}"
-        _after_percent="${_fmt#*\%}"
-        _max_width=0
-
-        # Safely extract _opt, accommodating braces and parentheses
-        case "$_after_percent" in
-        {*)  _opt="${_after_percent%%\}*}"; _opt="${_opt}}" ;;
-        \(*) _opt="${_after_percent%%\)*}"; _opt="${_opt})" ;;
-        *)   _opt="${_after_percent%%[!a-zA-Z0-9_]*}"       ;;
-        esac
-
-        # Identify the string immediately following the extracted option
-        _after_opt="${_after_percent#"$_opt"}"
-
-        # Detect mode: Does the string immediately following the option start with a modifer '@' or '?'
-        case "$_after_opt" in
-        [@?][@?]*)           _paterr "${_after_opt%${_after_opt#??}}"   ;;
-        [?][!0-9]*)          _paterr "?" "must be followed by a number" ;;
-        c[0-9]*[!%]*@)       _paterr "@" "cannot align colors"          ;;
-        [?][0-9]*[@][1-9]*)  _paterr "?@" "Use @offset,max_width"       ;;
-        [@][1-9-]*[?][0-9]*) _paterr "@?" "Use @pos,max_width"          ;;
-        [@][0-9-]*[,][0-9]*) _fmt_mode=","                              ;; 
-        [?]*)                _fmt_mode="?"                              ;;
-        [@]*)                _fmt_mode="@"                              ;;
-        *)                   _fmt_mode="none"                           ;;
-        esac
-
-        if [ "$_fmt_mode" = "none" ]; then
-            _prefix="$_before"           # Literal text before the %
-            _out="${_out}${_prefix}%s"   # Append literal text to _out followed by %s
-            _get_val "$_opt"             # Resolve value
-            _fmt="$_after_opt"           # Advance the string past the option
-            set -- "$@" "$_val"          # Append to printf arguments
-        else
-            _full_mod="${_after_opt%%[$_sp$_tb%]*}"
-
-            _offset=""
-            _max_width=""
-            _opt_suffix=""
-
-            case "$_fmt_mode" in
-            ",") # @PADDING,WIDTH (e.g. @5,2ms)
-                _body="${_full_mod#@}"               # Strip @ -> 5,2ms
-                _offset="${_body%%,*}"               # 5
-                _body="${_body#*,}"                  # 2ms
-                _max_width="${_body%%[!0-9]*}"       # 2
-                _opt_suffix="${_body#"$_max_width"}" # ms
-                ;;
-            "?") # ?WIDTH (e.g. ?2ms)
-                _body="${_full_mod#\?}"              # 2ms
-                _max_width="${_body%%[!0-9]*}"       # 2
-                _opt_suffix="${_body#"$_max_width"}" # ms
-                ;;
-            "@") # @PADDING (e.g. @5ms)
-                _body="${_full_mod#@}"               # 5ms
-                _offset="${_body%%[!0-9-]*}"         # 5
-                _opt_suffix="${_body#"$_offset"}"    # ms
-                ;;
-            esac
-
-            _opt_prefix="${_before##*[$_sp$_tb]}"   
-            _prefix="${_before%"$_opt_prefix"}"     
-            _get_val "$_opt"
-            _ret=$?
-
-            _opt_glued="${_opt_prefix}${_val}${_opt_suffix}" 
-
-            # Calculate Offset
-            _wrap_len=0
-            case "$_opt" in {*} | \(*\)) _wrap_len=-2 ;; esac
-            
-            if [ -z "$_offset" ] && [ $_ret -eq 0 ]; then
-                _wrap_len=$((${#_opt_prefix} + ${#_opt_suffix}))
-                _safe_opt=$(set_case "upper" "$_opt") 
-                eval "_offset=\$(( -\${LOG_FMT_OFFSET_${_safe_opt}:-0} ))"
-                # [ "$_lvl" = "TRACE" ] && _wrap_len="$((_wrap_len + $LOG_FMT_OFFSET_TRACE))"
-            fi
-
-            _wrap_len="$((_wrap_len + ${_fmt_lvl_offset:-0}))" # Add LOG_FMT_OFFSET_<LEVEL/LABEL>
-
-            case "$_offset" in
-                -*) _offset="-$((${_offset#-} + _wrap_len))" ;;
-                *[0-9]*) _offset="$((_offset + _wrap_len))" ;;
-            esac
-
-            _out="${_out}${_prefix}%${_offset}s"
-
-            # ADVANCE: Safely strip the fully consumed modifier block
-            _fmt="${_after_opt#"$_full_mod"}" 
-
-            set -- "$@" "$_opt_glued"
-        fi
-    done
-
-    # Append any remaining literal text after the final variable
-    _out="${_out}${_fmt}${LOG_DEFAULT_COLOR:-$(tput sgr0)}"
-    _opts="$@"
-    debug _out _opts
-
-    # Output the fully resolved format string
-    printf "$_out\n" "$@"
+_shlog_lstrip() {
+    # Usage: _shlog_lstrip "string" "pattern"
+    case $1 in
+    *$2*) printf '%s%s\n' "${1%%$2*}" "${1#*$2}" ;;
+    *)
+        printf '%s\n' "$1"
+        return 1
+        ;;
+    esac
+    return 0
 }
 
-_log_print "$1"
+_shlog_resolve() {
+    _raw="${2#?}"
+    _cc="${_raw%%[!0-9]*}"
 
-_valid_color_str() { case "$1" in LOG_DEBUG_COLOR | LOG_INFO_COLOR | LOG_SUCCESS_COLOR | LOG_WARNING_COLOR | LOG_ERROR_COLOR | LOG_TRACE_COLOR | LOG_CUSTOM_COLOR) return 0 ;; *) return 1 ;; esac }
-_sanitize_var() { case "$1" in ''|*[!A-Z0-9_]*) return 1 ;; esac; return 0; }
+    case "$1:$2" in
+    # KEY EXTRACTION
+    key:c[1-9]*)      _key="c${_raw%%[!0-9]*}" ;;
+    key:c0*)          _key="c0" ;;
+    key:date*)        _key="date" ;;
+    key:label_upper*) _key="label_upper" ;;
+    key:label*)       _key="label" ;;
+    key:message*)     _key="message" ;;
+    key:hostname*)    _key="hostname" ;;
+    key:scriptname*)  _key="scriptname" ;;
+    key:lineno*)      _key="lineno" ;;
+    key:level_int*)   _key="level_int" ;;
+    key:sym*)         _key="sym" ;;
+    key:log_path*)    _key="log_path" ;;
+    key:*)            _key="$1"; return 1 ;;
+
+    # CODE EXTRACTION
+    code:date)         _code='$(date +"${LOG_DATE_FORMAT}")' ;;
+    code:label_upper)  _code='${_evt_id}' ;;
+    code:label)        _code='${_evt_lbl}' ;;
+    code:message)      _code='${_evt_msg}' ;;
+    code:hostname)     _code='${HOSTNAME}' ;;
+    code:scriptname)   _code='${SCRIPT_NAME:-$0}' ;;
+    code:lineno)       _code='${_caller_lineno:-}' ;;
+    code:level_int)    _code='${_lvl_int}' ;;
+    code:sym)          _code='${_evt_sym}' ;;
+    code:log_path)     _code='${LOG_PATH}' ;;
+    code:c[1-9]*)      _code="\$(tput setaf ${_cc})" ;;
+    code:*)            _code=''; return 1 ;;
+    esac
+    return 0
+}
+
+SHLOG_HAS_CACHE() { case ",${SHLOG_CACHED_VARS}," in *,"$1",*) return 0 ;; esac; return 1; }
+
+_shlog_escape() {
+    # Usage: _shlog_escape "string"
+    # Prints the string with single quotes escaped for use in single-quoted eval.
+    # Input:  It's "Time"
+    # Output: It'\''s "Time"
+    printf '%s\n' "$1" | sed "s/'/'\\\\''/g"#
+}
+
+_shlog_compile() {
+    # Usage: _log_compile "TARGET" "EVENT_ID" "RAW_FORMAT_STRING"
+    _target="$1"
+    _event="$2"
+    _evt_fmt="$3"
+    debug _evt_fmt
+    
+    _printf_fmt=""
+    _keys=""
+
+    # 1. Parse left to right, stopping at each %
+    while [ "$_evt_fmt" != "${_evt_fmt%%\%*}" ]; do
+        # Split format string
+        _before="${_evt_fmt%%\%*}"
+        _after_percent="${_evt_fmt#*\%}"
+
+        # Strip backslahes
+        while _before=$(_shlog_lstrip "$_before" "\\"); do :; done
+
+        # Extract option token safely
+        _opt="${_after_percent%%[!a-zA-Z0-9_\\]*}" 
+        _after_opt="${_after_percent#"$_opt"}"
+
+        # 3. Validate option
+        if ! _shlog_resolve "key" "$_opt" || ! _shlog_resolve "code" "$_opt"; then
+            # Invalid option: Treat it as raw text and continue
+            _printf_fmt="${_printf_fmt}${_before}%${_opt}"
+            _evt_fmt="$_after_opt"
+            continue
+        fi
+
+        # 4. Check for modifiers (@ or ?)
+        case "$_after_opt" in
+            @*|?*)
+                # Extract contiguous block up to the next whitespace for parsing
+                _mod_block="${_after_opt%%[[:space:]]*}"
+                _fmt_mode="none"
+                
+                # 5. Validate modifier and associate mode
+                case "$_mod_block" in
+                    @*[0-9]*,[0-9]*) _fmt_mode="," ;;
+                    \?[0-9]*)        _fmt_mode="?" ;;
+                    @*)              _fmt_mode="@" ;;
+                esac
+
+                if [ "$_fmt_mode" = "none" ]; then
+                    # Invalid modifier: treat as normal character
+                    _printf_fmt="${_printf_fmt}${_before}%s"
+                    _keys="${_keys}${_keys:+ }\"${_code}\""
+                    _evt_fmt="$_after_opt"
+                    continue
+                fi
+
+                # 6. Extract prefix of the option stopping at closest whitespace
+                _opt_prefix="${_before##*[$_sp$_tb]}"
+                _prefix="${_before%"$_opt_prefix"}"
+
+                # 7. Enter logic blocks based on mode
+                _padding=""
+                _max_width=""
+                _opt_suffix=""
+                _raw_suffix=""
+                
+                if [ "$_fmt_mode" = "," ]; then
+                    _body="${_mod_block#@}"
+                    _padding="${_body%%,*}"
+                    _body="${_body#*,}"
+                    _max_width="${_body%%[!0-9]*}"
+                    _raw_suffix="${_body#"$_max_width"}"
+                elif [ "$_fmt_mode" = "?" ]; then
+                    _body="${_mod_block#\?}"
+                    _max_width="${_body%%[!0-9]*}"
+                    _raw_suffix="${_body#"$_max_width"}"
+                elif [ "$_fmt_mode" = "@" ]; then
+                    _body="${_mod_block#@}"
+                    _padding="${_body%%[!0-9-]*}"
+                    _raw_suffix="${_body#"$_padding"}"
+                    [ -z "$_padding" ] && _fmt_mode="config"
+                fi
+
+                # Assign option suffix (split at next whitespace)
+                _opt_suffix="${_raw_suffix%%[$_sp$_tb]*}"
+                
+                # Advance format string past the evaluated modifier block
+                _evt_fmt="${_after_percent#*"$_opt$_mod_block"}"
+                
+                # Upper case option for variable resolution
+                _opt_upper="$(set_case "upper" "${_opt#--}")"
+                
+                # 8b. Fetch globals if mode=config
+                if [ "$_fmt_mode" = "config" ]; then
+                    eval "_padding=\"\${LOG_FMT_${_opt_upper}_OFFSET:-}\""
+                    eval "_max_width=\"\${LOG_FMT_${_opt_upper}_MAX_WIDTH:-}\""
+                fi
+
+                # 8a. Calculate offset: N = length(prefix) + abs(_padding) + _max_width + length(suffix)
+                _wrap_len=$((${#_opt_prefix} + ${#_opt_suffix}))
+                
+                debug _padding _max_width
+                # POSIX absolute value
+                if is_uint8 "$_max_width" || is_int8 "$_padding"; then
+                _abs_padding="${_padding#-}"
+                _abs_padding="${_abs_padding:-0}"
+                _max_width="${_max_width:-0}"
+                _n=$((_wrap_len + _abs_padding + _max_width))
+                fi
+                
+                case "$_padding" in
+                    -*) _final_padding="-$_n" ;;
+                    *)  _final_padding="$_n" ;;
+                esac
+
+                # 9. Clean up format string, append to out and args
+                _printf_fmt="${_printf_fmt}${_prefix}%${_final_padding}s"
+                _glued_key="${_opt_prefix}\"${_code}\"${_opt_suffix}"
+                _keys="${_keys}${_keys:+ }${_glued_key}"
+
+                # 10. Cache padding and max_width
+                eval "LOG_FMT_${_opt_upper}_OFFSET=\"\$_final_padding\""
+                eval "LOG_FMT_${_opt_upper}_MAX_WIDTH=\"\$_max_width\""
+                ;;
+            *)
+                # No modifier present
+                _printf_fmt="${_printf_fmt}${_before}%s"
+                _keys="${_keys}${_keys:+ }\"${_code}\""
+                _evt_fmt="$_after_opt"
+                ;;
+        esac
+    done
+
+    # Append remaining literal text and generate the dynamic function name
+    _printf_fmt="${_printf_fmt}${_evt_fmt}"
+    _cached_func_name="_SHLOG_RENDER_${_event}_${_target}"
+
+    [ -n "$_cached_func_name" ] || exit 420
+
+    # Compile format to memory and add to cache list
+    eval "${_cached_func_name}() { printf '${_printf_fmt}\n' ${_keys}; }"
+    SHLOG_CACHE="${SHLOG_CACHE:+$SHLOG_CACHE,}$_cached_func_name"
+
+    debug _printf_fmt _keys SHLOG_CACHE _cached_func_name
+    return 0
+}
+
+_shlog_render() {
+    # Usage: _shlog_render "TARGET" "EVENT" "RAW_FORMAT_STRING"
+    _target="$1"
+    _event="$2"
+    _raw_fmt="$3"
+
+    [ -n "$_target" ] || exit 1337
+    [ -n "$_event" ] || exit 1337
+
+    if ! SHLOG_HAS_CACHE "_SHLOG_CACHE_${_event}_${_target}"; then
+        _shlog_compile "$_target" "$_event" "$_raw_fmt"
+    fi
+
+    "_SHLOG_RENDER_${_event}_${_target}"
+}
 
 log() {
-    unset _lbl _msg _lvl _color _input_color
+    unset _evt_lbl _evt_msg _evt_lvl _evt_color _raw_color _evt_offset _evt_id _evt_sym _evt_lvl_int _lvl_stdout _lvl_log _final_stdout _final_log
 
     # If more than 2 args are provided to the log function, we always assume that
     # the last argument is a color. This is bypassed by setting any color flag
     case "$#" in
-    0) printf "WARNING: No message\n" >&2 ;;
-    1)
-        _lbl="INFO"
-        _msg="$1"
-        ;;
-    2)
-        _lbl="$1"
-        _msg="$2"
-        ;;
-    *)
-        _lbl="$1"
-        shift
-        _msg="$*"
+    0) printf "WARNING: No message\n" >&2; return 1;;
+    1) _evt_msg="$1";;
+    2) _evt_lbl="$1"; shift; _evt_msg="$1" ;;
+    *) _evt_lbl="$1"; shift; _evt_msg="$*"
 
+        # Assume last argument is color
         _raw_color=""
         for _raw_color in "$@"; do :; done
 
-        _input_color="$_raw_color"
-        [ -n "$_raw_color" ] && _msg="${_msg% $_raw_color}"
+        # If it is a color, we strip it from _evt_msg
+        is_color "$_raw_color" && _evt_msg="${_evt_msg% $_raw_color}"
         ;;
     esac
 
-    _lbl_upper="$(set_case "upper" "$_lbl")"
+    # Clean input label to assign level and get eval'ed
+    # This patches eval vulnerabilities assuming is_upper_alnum works properly
+    if [ -z "$_evt_lbl" ]; then
+        _evt_lbl="INFO"
+        _evt_id="INFO"
+    else
+        _evt_id="$(set_case "upper" "$_evt_lbl" | sed 's/[^A-Z0-9_]/_/g')"
+        is_upper_alnum "$_evt_id" || {
+            printf "ERROR: Illegal identifier in label `%s`.\n" "$_evt_id" >&2
+            printf "       Identifier can not be eval'ed safely\n" >&2
+            exit 2
+        }
+    fi
 
-    # Sanitize label
-    _sanitize_var "$_lbl_upper" || {
-        printf "WARNING: Invalid characters in label '%s'. forcing CUSTOM.\n" "$_lbl_upper" >&2
-        _lbl_upper="CUSTOM"
-    }
+    # TODO: Create grouping function that associates an event with a level
 
     # Extract and validate the log level from the label
-    case "$_lbl_upper" in
-    DEBUG | INFO | SUCCESS | WARNING | ERROR)
-        _lvl="$_lbl_upper"
-        ;;
-    ENTRY | EXIT)
-        _lvl="TRACE"
-        _lbl="$_lbl_upper"
-        ;;
-    TRACE | TRACE_IN | TRACE_OUT)
-        _lvl="TRACE"
-        _lbl="TRACE"
-        ;;
-    *)
-        _lvl="CUSTOM"
-        ;;
+    case "$_evt_id" in
+    DEBUG | INFO | SUCCESS | WARNING | ERROR) _evt_lvl="$_evt_id" ;;
+    
+    # XXX: This is how group diffrent labels to the same level
+    ENTRY | EXIT | TRACE*) _evt_lvl="TRACE" ;;
+
+    # NOTE: CUSTOM level is not related to formatting.
+    #       This is only used to compare level_int with level_target
+    *) _evt_lvl="CUSTOM" ;;
     esac
 
     # Validate levels since they'll be eval-ed
@@ -446,68 +469,60 @@ log() {
     DEBUG | INFO | SUCCESS | WARNING | ERROR | TRACE | CUSTOM) ;;
     *) LOG_LEVEL_STDOUT=INFO ;;
     esac
+
     case "$LOG_LEVEL_LOG" in
     DEBUG | INFO | SUCCESS | WARNING | ERROR | TRACE | CUSTOM) ;;
-    *) _lvl_log=INFO ;;
+    *) LOG_LEVEL_LOG=INFO ;;
     esac
 
-    # 1. Apply 8-bit ANSI color code if the argument is an integer (0-255).
-    # 2. Apply predefined color variable if the argument is a valid color string.
-    # 3. Fallback to the default color for the current log level.
-    if is_uint "$_input_color" && [ "$_input_color" -le 255 ]; then
-        # Safe because we check if
-        eval "_color=\"\$(tput setaf \"$_input_color\")\""
-    elif _valid_color_str "$_input_color"; then
-        eval "_color=\"\$$_input_color\"" # Safe: Validated
+    if is_int "$_raw_color"; then
+        eval "_evt_color=\"\$(tput setaf \"$_raw_color\")\""
+    elif is_color_str "$_raw_color"; then
+        eval "_evt_color=\"\$$_raw_color\""
     else
-        eval "_color=\"\$LOG_${_lvl}_COLOR\"" # Safe: Validated _lvl
+        eval "_evt_color=\"\$LOG_${_evt_lvl}_COLOR\""
     fi
 
-    # Resolve the symbol and its conditional spacing
+    # Resolve event specific symbol
     if [ "${LOG_FMT_SYM_ENABLE:-1}" = "1" ]; then
-        eval "_sym=\"\${LOG_FMT_SYM_${_lbl_upper}:-}\"" # Safe: Validated
+        eval "_evt_sym=\"\${LOG_FMT_SYM_${_evt_id}:-}\"" # Safe: Validated
     fi
 
-    # Resolve dynamic variables
-    eval "_lvl_int=\"\$LOG_LEVEL_$_lvl\""                        # Safe: Validated
-    eval "_lvl_stdout=\"\$LOG_LEVEL_$LOG_LEVEL_STDOUT\""         # Safe: Validated
-    eval "_lvl_log=\"\$LOG_LEVEL_$LOG_LEVEL_LOG\""               # Safe: Validated
-    eval "_fmt_lbl_stdout=\"\$LOG_FORMAT_${_lbl_upper}_STDOUT\"" # Safe: Validated
-    eval "_fmt_lbl_log=\"\$LOG_FORMAT_${_lbl_upper}_LOG\""       # Safe: Validated
-    eval "_fmt_lvl_stdout=\"\$LOG_FORMAT_${_lvl}_STDOUT\""       # Safe: Validated
-    eval "_fmt_lvl_log=\"\$LOG_FORMAT_${_lvl}_LOG\""             # Safe: Validated
-    eval "_fmt_lbl=\"\$LOG_FORMAT_$_lbl_upper\""                 # Safe: Validated
-    eval "_fmt_lvl=\"\$LOG_FORMAT_$_lvl\""                       # Safe: Validated
-    eval "_fmt_lvl_offset=\"\${LOG_FMT_OFFSET_$_lbl_upper:-0}\""  # Safe: Validated
+    # Resolve event specific offsets
+    eval "_evt_offset=\"\${LOG_FMT_OFFSET_${_evt_id}:-0}\""
 
-    # Base Generic Chain: Label > Level > Global LOG_FORMAT
-    _chain_generic="${_fmt_lbl:-${_fmt_lvl:-$LOG_FORMAT}}"
+    # Resolve event and target integer values
+    eval "_evt_lvl_int=\"\$LOG_LEVEL_$_evt_lvl\""
+    eval "_lvl_stdout=\"\$LOG_LEVEL_$LOG_LEVEL_STDOUT\""
+    eval "_lvl_log=\"\$LOG_LEVEL_$LOG_LEVEL_LOG\""
     
-    # STDOUT Chain: Label_STDOUT > Level_STDOUT > Global LOG_FORMAT_STDOUT
-    _chain_stdout="${_fmt_lbl_stdout:-${_fmt_lvl_stdout:-$LOG_FORMAT_STDOUT}}"
-    
-    # LOG Chain: Label_LOG > Level_LOG > Global LOG_FORMAT_LOG
-    _chain_log="${_fmt_lbl_log:-${_fmt_lvl_log:-$LOG_FORMAT_LOG}}"
+    # NOTE: We should perhaps cache event specific formats for easier import/export?
+    #       ALL IMPORT/EXPORT SHOULD GO THROUGH THE FORMAT STRING
 
-    _final_stdout="${_chain_stdout:-$_chain_generic}"
-    _final_log="${_chain_log:-$_chain_generic}"
-
-    unset _fmt_lbl _fmt_lvl _fmt_lbl_stdout _fmt_lvl_stdout \
-        _fmt_lbl_log _fmt_lvl_log _chain_generic _chain_stdout _chain_log
+    _errmsg3='ERROR: %s=%s (val: `%s`) is not a valid level\n'
+    is_int "$_evt_lvl_int" || { printf "$_errmsg3" "LOG_LEVEL" "$_evt_lvl" "$_evt_lvl_int" >&2; exit 3; }
+    is_int "$_lvl_stdout" || { printf "$_errmsg3" "LOG_LEVEL_STDOUT" "$LOG_LEVEL_STDOUT" "$_lvl_stdout" >&2; exit 3; }
+    is_int "$_lvl_log" || { printf "$_errmsg3" "LOG_LEVEL_LOG" "$LOG_LEVEL_LOG" "$_lvl_log" >&2; exit 3; }
 
     # Print to STDOUT
-    if [ "$_lvl_stdout" -le "$_lvl_int" ]; then
-        _log_print "$_final_stdout"
+    if [ "$_lvl_stdout" -le "$_evt_lvl_int" ]; then
+        # Resolve STDOUT: LABEL_STDOUT -> LEVEL_STDOUT -> DEFAULT_STDOUT
+        eval "_final_stdout=\"\${LOG_FORMAT_${_evt_id}_STDOUT:-\${LOG_FORMAT_${_evt_lvl}_STDOUT:-\$LOG_FORMAT_STDOUT}}\""
+        [ -n "$_final_stdout" ] || { printf 'ERROR: No format is specified' && exit 4 ;}
+
+        # Render and print STDOUT
+        _shlog_render "STDOUT" "$_evt_id" "$_final_stdout"
     fi
 
     # Check _lvl_log to see if this level of entry goes to LOG_PATH
-    if is_int "$_lvl_log"; then
-        if [ "$_lvl_log" -le "$_lvl_int" ]; then
-            # Write to LOG_PATH without fancy colors
-            if [ -n "$LOG_PATH" ]; then
-                _log_print "$_final_log" | strip_ansi >>"$LOG_PATH"
-            fi
-        fi
+    [ -n "$LOG_PATH" ] || return 0
+    if [ "$_lvl_log" -le "$_evt_lvl_int" ]; then
+        # Resolve LOG: LABEL_LOG -> LEVEL_LOG -> DEFAULT_LOG
+        eval "_final_log=\"\${LOG_FORMAT_${_evt_id}_LOG:-\${LOG_FORMAT_${_evt_lvl}_LOG:-\$LOG_FORMAT_LOG}}\""
+        [ -n "$_final_stdout" ] || { printf 'ERROR: No format is specified' && exit 4 ;}
+        
+        # Render and print LOG
+        _shlog_render "LOG" "$_evt_id" "$_final_log" | strip_ansi >>"$LOG_PATH"
     fi
     return 0
 }
@@ -521,13 +536,6 @@ zsh:*) SCRIPT_EXTENSION="zsh" ;;
 *:bash) SCRIPT_EXTENSION="bash" ;;
 *) SCRIPT_EXTENSION="sh" ;;
 esac
-
-# Determines if we print color or not
-if ! tty -s; then
-    readonly INTERACTIVE_MODE="off"
-else
-    readonly INTERACTIVE_MODE="on"
-fi
 
 # Enable POSIX shell features
 log_info() { log "INFO" "$@"; }
